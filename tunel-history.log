@@ -22,3 +22,6 @@
 2026-09-07T22:26:19+00:00 OK    tmole   https://lgyjj5-ip-136-67-160-153.tunnelmole.net
 2026-09-07T22:29:25+00:00 reiniciando (2 falhas)
 2026-09-07T22:29:32+00:00 OK    serveo  https://09e892fb20d88e2b-136-67-160-153.serveousercontent.com
+2026-09-07T23:20:05+00:00 reiniciando (2 falhas)
+2026-09-07T23:21:07+00:00 FALHA tmole
+2026-09-07T23:21:13+00:00 OK    serveo  https://6e1718ec819107d9-34-145-4-99.serveousercontent.com

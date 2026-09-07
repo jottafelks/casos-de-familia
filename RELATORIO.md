@@ -8,12 +8,13 @@ Data: 07/09/2026 · tudo abaixo foi testado de verdade neste workspace (não é 
 
 | | |
 |---|---|
-| **Link temporário (para testar hoje)** | https://6wrhoi-ip-136-67-160-153.tunnelmole.net |
+| **Link temporário (para testar hoje)** | https://du0hve-ip-34-145-4-99.tunnelmole.net |
 | **Link permanente** | ⚠️ **Pendente — depende da sua conta** (veja o item 4) |
 | Servidor local | `npm start` → http://localhost:3000 |
 
-O endereço temporário funciona no celular agora mesmo (testei o `/healthz`). Ele **não** é a
-entrega final: cai quando esta máquina desliga. O que falta para o endereço definitivo está
+O endereço temporário funciona no celular agora mesmo (testei o `/healthz` e uma partida de
+2 jogadores por ele). Ele **não** é a entrega final: cai quando esta máquina desliga, e o
+watchdog pode trocá-lo — nesse caso o endereço atualizado fica em `ACESSO.md`. O que falta para o endereço definitivo está
 no item 4, e é a única etapa que eu não consigo fazer sozinho.
 
 ---
@@ -91,6 +92,15 @@ Com isso eu crio o repositório, disparo o Blueprint, testo a URL e te devolvo
 | Ping a cada 10 min em `/healthz` | cron-job.org | **Opcional.** Evita o servidor dormir no plano grátis do Render |
 
 Nenhuma credencial está no código; o `.env` está no `.gitignore`.
+
+### Enquanto isso: link de teste (temporário)
+
+`ACESSO.md` e `COMO-ACESSAR.md` trazem o endereço público de agora (túnel) com QR code, e um
+watchdog na máquina mantém o túnel vivo, regravando a URL sozinho se ele cair. **Esse túnel
+não é o endereço final** — serve para você jogar hoje do celular. Um detalhe: túneis gratuitos
+não transportam WebSocket, então por ele o jogo usa automaticamente o transporte reserva
+(HTTP long-poll). A partida sincroniza igual; só a sinalização da voz fica ~1 s mais lenta.
+No endereço definitivo (Render), volta ao WebSocket.
 
 ---
 

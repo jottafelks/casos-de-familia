@@ -1,33 +1,36 @@
-# 🎮 CASO 47 — link para abrir no celular
+# 🎮 CASOS DE FAMÍLIA — link para abrir no celular
 
-## 👉 https://09e892fb20d88e2b-136-67-160-153.serveousercontent.com
+## 👉 https://du0hve-ip-34-145-4-99.tunnelmole.net
 
-Abra esse endereço no celular. Na primeira visita aparece um aviso do Serveo — toque em **Continue to Site**.
+Abra esse endereço no celular. Abre direto, sem tela de aviso.
 
 📱 **QR code:** abra `preview/QR-ACESSO.png` e aponte a câmera do celular.
 
-Link ativo em: 07/09/2026 22:29:32 — via **serveo**
+Link ativo em: 07/09/2026 23:24:13 — via **tunnelmole**
 
 ---
 
 ## Jogar em grupo
 
-1. Um aparelho toca **CRIAR SALA** → código de 5 letras
-2. Os outros tocam **ENTRAR COM CÓDIGO** → digitam o código
-3. Quem criou toca **COMEÇAR INVESTIGAÇÃO**
+1. Um aparelho toca **CRIAR SALA** → código `FAM-XXXX`
+2. Os outros tocam **ENTRAR EM SALA** → digitam o código (ou abrem o link compartilhado)
+3. Todos marcam **PRONTO**; quem criou toca **INICIAR CASO**
+4. Cada um lê o briefing no seu ritmo (**CONTINUAR**) e recebe o papel secreto
+5. Investiguem, conversem pelo 🎤, usem **PAPO SECRETO** e votem antes de o tempo acabar
 
-Sozinho: **JOGAR SOZINHO**, ou abra 2 abas do navegador (uma cria, outra entra).
+Sozinho: **JOGAR SOZINHO**. Em 2: o sistema entra com suspeitos e a partida dura 5 min.
+
+---
+
+## Casos disponíveis
+
+CF-01 Mansão · CF-02 Fazenda · CF-03 Hotel · **CF-04 O Último Balanço (empresa)**
 
 ---
 
 ## Se o link cair
 
-Abra este arquivo de novo — o watchdog recria o túnel sozinho e regrava a URL
-aqui em ~1 minuto (o QR é regerado junto).
+Abra este arquivo de novo — o watchdog recria o túnel sozinho e regrava a URL aqui em ~1 minuto.
 
-Para não depender de túnel, rode na sua máquina:
-```bash
-cd escape-room && npm install && npm start
-# celulares na mesma rede Wi-Fi usam o IP que aparece no terminal
-```
-Ou publique de graça com URL fixa (Render/Railway) — `render.yaml` e `Dockerfile` prontos.
+Para não depender de túnel: `RENDER-PASSO-A-PASSO.md` (URL fixa e gratuita) ou rode na sua
+máquina com `npm install && npm start` (celulares na mesma rede Wi-Fi usam o IP do terminal).

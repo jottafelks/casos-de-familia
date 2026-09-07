@@ -2,7 +2,7 @@
 
 ## Link para jogar agora (temporário)
 
-https://6wrhoi-ip-136-67-160-153.tunnelmole.net
+https://du0hve-ip-34-145-4-99.tunnelmole.net
 
 > **Atenção:** este endereço é temporário — serve para você testar hoje no celular, mas
 > cai quando esta máquina desliga. O endereço definitivo sai do Render (plano grátis):

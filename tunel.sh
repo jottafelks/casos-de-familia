@@ -61,7 +61,7 @@ W, H = img.size
 out = Image.new('RGB', (W, H + 110), "#e9e3d6")
 out.paste(img, (0, 60))
 d = ImageDraw.Draw(out); f = ImageFont.load_default()
-t = "CASO 47 - A NOITE DE HELENA"
+t = "CASOS DE FAMILIA"
 b = d.textbbox((0, 0), t, font=f); d.text(((W - (b[2]-b[0])) / 2, 20), t, fill="#7a5a1e", font=f)
 b2 = d.textbbox((0, 0), url, font=f); d.text(((W - (b2[2]-b2[0])) / 2, H + 68), url, fill="#3a2a12", font=f)
 out.save('/home/user/escape-room/preview/QR-ACESSO.png')
