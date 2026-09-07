@@ -1,36 +1,36 @@
-# 🎮 CASOS DE FAMÍLIA — link para abrir no celular
+# CASOS DE FAMILIA - link para abrir no celular
 
-## 👉 https://du0hve-ip-34-145-4-99.tunnelmole.net
+## https://oxford-redeem-posted-graphic.trycloudflare.com
 
-Abra esse endereço no celular. Abre direto, sem tela de aviso.
+Abra esse endereco no celular. Abre direto, sem tela de aviso, e com WebSocket (voz e chat instantaneos).
 
-📱 **QR code:** abra `preview/QR-ACESSO.png` e aponte a câmera do celular.
+QR code: abra `preview/QR-ACESSO.png` e aponte a camera do celular.
 
-Link ativo em: 07/09/2026 23:24:13 — via **tunnelmole**
+Link ativo em: 07/09/2026 23:35:55 - via **Cloudflare**
 
 ---
 
 ## Jogar em grupo
 
-1. Um aparelho toca **CRIAR SALA** → código `FAM-XXXX`
-2. Os outros tocam **ENTRAR EM SALA** → digitam o código (ou abrem o link compartilhado)
+1. Um aparelho toca **CRIAR SALA** -> codigo `FAM-XXXX`
+2. Os outros tocam **ENTRAR EM SALA** -> digitam o codigo (ou abrem o link compartilhado)
 3. Todos marcam **PRONTO**; quem criou toca **INICIAR CASO**
-4. Cada um lê o briefing no seu ritmo (**CONTINUAR**) e recebe o papel secreto
-5. Investiguem, conversem pelo 🎤, usem **PAPO SECRETO** e votem antes de o tempo acabar
+4. Cada um le o briefing no seu ritmo (**CONTINUAR**) e recebe o papel secreto
+5. Investiguem, conversem pelo microfone, usem **PAPO SECRETO** e votem antes de o tempo acabar
 
 Sozinho: **JOGAR SOZINHO**. Em 2: o sistema entra com suspeitos e a partida dura 5 min.
 
 ---
 
-## Casos disponíveis
+## Casos
 
-CF-01 Mansão · CF-02 Fazenda · CF-03 Hotel · **CF-04 O Último Balanço (empresa)**
+CF-01 Mansao - CF-02 Fazenda - CF-03 Hotel - CF-04 O Ultimo Balanco (empresa)
 
 ---
 
 ## Se o link cair
 
-Abra este arquivo de novo — o watchdog recria o túnel sozinho e regrava a URL aqui em ~1 minuto.
+Abra este arquivo de novo - o watchdog recria o tunel sozinho e regrava a URL aqui em ~1 minuto.
 
-Para não depender de túnel: `RENDER-PASSO-A-PASSO.md` (URL fixa e gratuita) ou rode na sua
-máquina com `npm install && npm start` (celulares na mesma rede Wi-Fi usam o IP do terminal).
+Para nao depender de tunel: `RENDER-PASSO-A-PASSO.md` (URL fixa e gratuita) ou rode na sua
+maquina com `npm install && npm start`.
