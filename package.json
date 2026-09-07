@@ -9,9 +9,11 @@
     "dev": "node server/server.js",
     "test": "node tests/engine.test.mjs && node tests/http.mjs",
     "test:e2e": "node tests/e2e.mjs",
-    "test:all": "npm test && npm run test:e2e && npm run test:stress",
+    "test:all": "npm test && npm run test:casos && npm run test:e2e && npm run test:stress",
     "test:visual": "node tests/visual.mjs",
-    "test:stress": "node tests/stress.mjs"
+    "test:stress": "node tests/stress.mjs",
+    "test:caso": "node tests/caso-novo.mjs",
+    "test:casos": "node tests/todos-os-casos.mjs"
   },
   "dependencies": {
     "express": "^4.19.2",

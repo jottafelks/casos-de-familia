@@ -11,11 +11,14 @@
      clues      → textos das pistas (sutis; NUNCA dizem "fulano é o assassino")
      traits     → características que uma pista pode apontar
      roles      → identidades secretas distribuídas entre os jogadores
-                  (exatamente uma tem guilty: true — a do assassino)
+                  (guilty marca a persona da solução; o assassino é um
+                   JOGADOR sorteado a cada partida, nunca um perfil fixo)
      witnesses  → personagens controlados pelo jogo (depoimentos, álibis)
      objectives → objetivos secundários do assassino (verificáveis)
      solution   → solução (usada no modo solo e na revelação final)
    ========================================================================== */
+
+import { EMPRESA } from './case-empresa.js';
 
 export const CASE_VERSION = 3;
 
@@ -834,7 +837,7 @@ const HOTEL = {
   minEvidence: 6
 };
 
-export const CASES = [MANSAO, FAZENDA, HOTEL];
+export const CASES = [MANSAO, FAZENDA, HOTEL, EMPRESA];
 
 export function getCase(id) {
   return CASES.find(c => c.id === id) || CASES[0];

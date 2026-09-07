@@ -35,6 +35,22 @@ descobrir até o cronômetro zerar.
 
 ---
 
+## Os casos
+
+| Código | Caso | Cenário |
+|---|---|---|
+| **CF-01** | A Noite de Helena | Mansão Alencar, Vazante-MG. Chuva, testamento, o relógio do hall parado às 23:47. |
+| **CF-02** | O Silêncio da Vargem Alta | Fazenda. Cofre aberto com senha, pegadas sem barro do celeiro ao curral, encontro marcado às 4h. |
+| **CF-03** | O Hóspede do 12 | Hotel. Chave de serviço sumida, camisa clara lavada às 3h, fogos à meia-noite. |
+| **CF-04** | O Último Balanço | Frigorífico familiar, Uberlândia-MG. Câmera desligada às 21h12, página 14 arrancada do relatório, graxa na escada de serviço. |
+
+Cada caso traz vítima, 4–5 locais (um deles trancado até certa descoberta), 12–20 objetos
+investigáveis, 13–26 pistas em três níveis de dificuldade, 6 perfis secretos, testemunhas
+interrogáveis, contradições e solução. As pistas nunca citam nomes: apontam **características**
+que só fazem sentido quando cruzadas em discussão.
+
+---
+
 ## Tecnologia
 
 * **Servidor Node** (Express + `ws`): salas `FAM-XXXX`, cronômetro autoritativo, votação,
@@ -60,6 +76,7 @@ npm run test:all   # tudo
 server/server.js        salas, códigos, cronômetro, voto, sinalização de voz (/api/ice)
 public/shared/engine.js regras puras (papéis, voto, pontuação, sussurros, objetivos)
 public/shared/cases.js  DADOS DOS CASOS (adicionar um caso novo = 1 objeto aqui)
+public/shared/case-empresa.js  caso CF-04 em arquivo próprio (modelo para os próximos)
 public/js/net.js        transporte (ws → http → offline) e reconexão
 public/js/voice.js      malha de voz WebRTC
 public/js/game.js       cena, objetos investigáveis, câmera
@@ -70,7 +87,8 @@ tests/                  suítes de regra, HTTP e ponta a ponta
 
 ### Adicionar um caso novo
 
-Edite só `public/shared/cases.js`: `briefing[]`, `victim`, `locations[]` (com
+Copie `public/shared/case-empresa.js` (o modelo mais recente), renomeie e registre uma linha
+em `cases.js`. Dentro do caso: `briefing[]`, `victim`, `locations[]` (com
 `objects[].actions[].effects`), `clues{}`, `traits`, `roles[]`, `witnesses[]`,
 `objectives[]` e `solution`. Nada mais precisa mudar — a engine, a cena e a interface
 leem tudo daí.

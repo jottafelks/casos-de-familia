@@ -25,9 +25,11 @@ explorada no canvas (salas, objetos investigáveis), as pistas apontam **caracte
 (botas com terra, briga às 22h, letra canhota) e nunca dizem "foi fulano" — a equipe precisa
 cruzar evidências, conversar, desconfiar e votar antes de o cronômetro zerar.
 
-* **3 casos prontos**: Mansão (CF-01), Fazenda (CF-02), Hotel (CF-03) — cada um com vítima,
-  4–5 locais, 12–19 objetos investigáveis, 13–26 pistas (fácil/médio/difícil), 6 perfis,
-  testemunhas, contradições e solução. Adicionar um caso = 1 objeto em `public/shared/cases.js`.
+* **4 casos prontos**: **Mansão (CF-01)**, **Fazenda (CF-02)**, **Hotel (CF-03)** e
+  **Empresa (CF-04 — "O Último Balanço")**, este escrito em arquivo próprio
+  (`public/shared/case-empresa.js`) como modelo para os próximos. Cada caso tem vítima,
+  4–5 locais (um trancado até certa descoberta), 12–20 objetos investigáveis, 13–26 pistas
+  (fácil/médio/difícil), 6 perfis, testemunhas, contradições e solução.
 * **Voz obrigatória**: WebRTC em malha, prompt de microfone, 🎤/🔇/🔊, papo secreto que
   isola a voz dos outros, detector de fala, religação automática.
 * **Salas** `FAM-XXXX` com link compartilhável, 1 a 6 jogadores, reconexão automática.
@@ -36,17 +38,20 @@ cruzar evidências, conversar, desconfiar e votar antes de o cronômetro zerar.
 
 ---
 
-## 3. Testes executados — 78 no total, todos passando
+## 3. Testes executados — 91 no total, todos passando
 
 | Suíte | Comando | Resultado | O que cobre |
 |---|---|---|---|
 | Regras (Node) | `npm test` | **35 ✓** | papéis, sorteio, cronômetro, voto irreversível, pontuação negativa, maioria, objetivos, sussurros, marcas, dados dos casos |
 | HTTP/long-poll | `npm test` | **12 ✓** | criar/entrar sala, limite de 6, transporte sem WebSocket, sigilo do estado, sinalização de voz |
 | Navegador (3 jogadores reais) | `npm run test:e2e` | **18 ✓** | partida completa: briefing manual, papel secreto, sigilo, chat, papo secreto, pistas, voto, placar, fim por tempo, reconexão, tela cheia, zero erro de JS |
+| Caso novo (CF-04) | `npm run test:caso` | **9 ✓** |
+| Varredura dos casos | `npm run test:casos` | **4 ✓** |
 | Robustez | `npm run test:stress` | **13 ✓** | **partida completa com 6 jogadores**, microfone negado (mensagem amigável + jogo continua), telas de 320 px sem transbordo e com alvos ≥ 44 px |
 
 Partidas jogadas de verdade: **solo, 2, 3 e 6 jogadores**. 4 e 5 jogadores têm cobertura de
 regras (35 testes) e de sala; a partida completa em navegador foi validada em 3 e em 6.
+Os 4 casos foram varridos objeto por objeto no navegador (sem erro de JS em nenhum).
 
 **Voz**: testada com microfone falso do Chrome — 6 de 6 conexões entre 3 jogadores, mesmo
 liberando o microfone em momentos diferentes; mute, medidor e isolamento no papo secreto
@@ -119,6 +124,12 @@ Nenhuma credencial está no código; o `.env` está no `.gitignore`.
 6. **Botão de tela cheia** faltava dentro da partida.
 7. **Reconexão**: queda de rede ou recarregar no meio da partida devolve o jogador à sala com
    o mesmo papel, pontuação e tempo restante.
+8. **Setas de saída da cena não funcionavam** nos casos 2 e 3 (usavam um formato de dados
+   diferente do caso 1). Agora os dois formatos são aceitos.
+9. **Botão de local trancado não atualizava**: no CF-04, depois de abrir o cofre, a barra de
+   locais continuava mostrando a sala do servidor como trancada.
+10. **Economia de bateria**: o jogo agora pausa explicitamente com o app em segundo plano e
+    cai para 30 qps em aparelhos que não sustentam 60.
 
 ---
 

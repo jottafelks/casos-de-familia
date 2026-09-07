@@ -440,6 +440,9 @@ net.on('state', (ev) => {
     if (UI.panelOpen()) UI.renderPanel();
     UI.renderPlayersStrip(state, net.playerId, net.playerId);
     UI.setClueCount(state.clues.length);
+    // a barra de locais é redesenhada sempre: uma bandeira nova pode ter
+    // acabado de destrancar um local (ex.: cofre → sala do servidor)
+    UI.renderLocBar(state, net.playerId, state.players[net.playerId]?.scene);
   }
 
   if (phase === 'lobby') { renderLobby(); UI.show('screen-lobby'); }

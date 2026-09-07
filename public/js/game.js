@@ -74,6 +74,22 @@ export class Game {
     UI.renderPlayersStrip(this.state, this.meId, this.net.playerId);
   }
 
+  /** Saídas da cena: aceita tanto {to,x,y,w,h} quanto uma simples lista de
+      ids — nesse caso as setas são posicionadas automaticamente. */
+  navOf(L) {
+    const slots = [
+      { x: 0, y: 300, w: 90, h: 220 },
+      { x: 1190, y: 300, w: 90, h: 220 },
+      { x: 470, y: 40, w: 340, h: 110 },
+      { x: 470, y: 610, w: 340, h: 110 }
+    ];
+    return (L?.nav || []).map((n, i) => {
+      if (typeof n !== 'string') return n;
+      const dest = this.CASE().locations.find(l => l.id === n);
+      return { to: n, label: dest?.short || dest?.name || n, ...slots[i % slots.length] };
+    });
+  }
+
   loop() {
     if (this.paused) { this._raf = null; return; }
     this._raf = requestAnimationFrame(() => this.loop());
@@ -119,7 +135,7 @@ export class Game {
       UI.say('Você entrou: ' + L.name + '.');
       A.playSfx('door');
       this.fade = 1;
-      const cameFromLeft = (this.loc(from)?.nav || []).some(n => n.to === this.scene && n.x < W / 2);
+      const cameFromLeft = this.navOf(this.loc(from)).some(n => n.to === this.scene && n.x < W / 2);
       const spawn = L.spawn || { x: W / 2, y: 500 };
       this.cam.x = spawn.x + (cameFromLeft ? -300 : 300);
       this.cam.targetX = spawn.x;
@@ -208,7 +224,7 @@ export class Game {
     }
 
     // setas de saída
-    for (const n of (L.nav || [])) {
+    for (const n of this.navOf(L)) {
       if (!this.unlocked(n.to)) continue;
       const cx = n.x + n.w / 2, cy = n.y + n.h / 2;
       const pulse = 0.20 + Math.sin(this.t * 0.003) * 0.08;
@@ -384,7 +400,7 @@ export class Game {
       const pad = 10;
       if (x > o.x - pad && x < o.x + o.w + pad && y > o.y - pad && y < o.y + o.h + pad) return { kind: 'obj', o };
     }
-    for (const n of (L.nav || [])) {
+    for (const n of this.navOf(L)) {
       if (x > n.x && x < n.x + n.w && y > n.y && y < n.y + n.h && this.unlocked(n.to)) return { kind: 'nav', ...n };
     }
     return null;
