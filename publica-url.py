@@ -52,7 +52,7 @@ for arq in ['COMO-ACESSAR.md', 'RELATORIO.md']:
     p = '/home/user/escape-room/' + arq
     if os.path.exists(p):
         s = open(p).read()
-        s2 = re.sub(r'https://[a-z0-9.-]+\.(trycloudflare\.com|tunnelmole\.net|serveousercontent\.com)', U, s)
+        s2 = re.sub(r'https://[a-z0-9.-]+\.(lhr\.life|localhost\.run|trycloudflare\.com|tunnelmole\.net|serveousercontent\.com)', U, s)
         if s2 != s:
             open(p, 'w').write(s2)
 

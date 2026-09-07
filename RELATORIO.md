@@ -8,7 +8,7 @@ Data: 07/09/2026 · tudo abaixo foi testado de verdade neste workspace (não é 
 
 | | |
 |---|---|
-| **Link temporário (para testar hoje)** | https://oxford-redeem-posted-graphic.trycloudflare.com |
+| **Link temporário (para testar hoje)** | https://be9827738a25eb.lhr.life |
 | **Link permanente** | ⚠️ **Pendente — depende da sua conta** (veja o item 4) |
 | Servidor local | `npm start` → http://localhost:3000 |
 

@@ -31,3 +31,7 @@
 2026-09-07T23:34:44+00:00 OK    cf     https://bathroom-pursuant-clicks-wagner.trycloudflare.com
 2026-09-07T23:35:44+00:00 reiniciando (2 falhas)
 2026-09-07T23:35:56+00:00 OK    cf     https://oxford-redeem-posted-graphic.trycloudflare.com
+2026-09-07T23:44:38+00:00 reiniciando (falhas=1 processo_morto=1 url=https://oxford-redeem-posted-graphic.trycloudflare.com)
+2026-09-07T23:44:44+00:00 OK    lhr    https://admin.localhost.run
+2026-09-07T23:46:56+00:00 reiniciando (falhas=1 processo_morto=1 url=)
+2026-09-07T23:47:02+00:00 OK    lhr    https://be9827738a25eb.lhr.life

@@ -2,7 +2,7 @@
 
 ## Link para jogar agora (temporário)
 
-https://oxford-redeem-posted-graphic.trycloudflare.com
+https://be9827738a25eb.lhr.life
 
 > **Atenção:** este endereço é temporário — serve para você testar hoje no celular, mas
 > cai quando esta máquina desliga. O endereço definitivo sai do Render (plano grátis):

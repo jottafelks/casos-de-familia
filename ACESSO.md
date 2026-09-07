@@ -1,12 +1,12 @@
 # CASOS DE FAMILIA - link para abrir no celular
 
-## https://oxford-redeem-posted-graphic.trycloudflare.com
+## https://be9827738a25eb.lhr.life
 
 Abra esse endereco no celular. Abre direto, sem tela de aviso, e com WebSocket (voz e chat instantaneos).
 
 QR code: abra `preview/QR-ACESSO.png` e aponte a camera do celular.
 
-Link ativo em: 07/09/2026 23:41:43 - via **Cloudflare**
+Link ativo em: 07/09/2026 23:48:04 - via **localhost.run**
 
 ---
 

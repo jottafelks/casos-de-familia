@@ -1,8 +1,9 @@
 #!/bin/bash
 # Watchdog de túnel público para o jogo (porta 3000).
-# Provider 1: cloudflared (trycloudflare)  -> HTTPS estável E WebSocket (voz/chat em tempo real)
-# Provider 2: tunnelmole                   -> HTTPS, sem WebSocket neste plano
-# Provider 3: serveo (ssh)                 -> reserva, mostra "Continue to Site"
+# Provider 1: localhost.run (SSH)          -> medido aqui: 12/12 OK + WebSocket em ~390 ms
+# Provider 2: cloudflared (trycloudflare)  -> HTTPS, WebSocket, mas ~40% de falhas aqui
+# Provider 3: tunnelmole                   -> HTTPS, sem WebSocket neste plano
+# Provider 4: serveo (ssh)                 -> reserva, mostra "Continue to Site"
 # Verifica /healthz a cada 20s; se falhar 2x seguidas (ou o processo do túnel tiver morrido),
 # recria o túnel trocando de provedor e republica a URL em TUNNEL-URL.txt, ACESSO.md e no QR.
 DIR=/home/user/escape-room
@@ -28,13 +29,37 @@ para_tudo() {
   sleep 2
 }
 
-ok_url() {   # $1 = url  -> 0 se /healthz responder 200 (2 tentativas, evita falso negativo)
-  local c
-  c=$(curl -s -o /dev/null -m 15 -w "%{http_code}" "$1/healthz")
-  [ "$c" = "200" ] && return 0
+# Só considera o túnel bom se /healthz responder COM A IDENTIDADE DO JOGO.
+# (um provedor pode devolver 200 na própria página e enganar a checagem)
+ok_url() {
+  local body
+  body=$(curl -s -m 15 "$1/healthz")
+  case "$body" in *'"game"'*"casos-de-familia"*) return 0 ;; esac
   sleep 5
-  c=$(curl -s -o /dev/null -m 15 -w "%{http_code}" "$1/healthz")
-  [ "$c" = "200" ]
+  body=$(curl -s -m 15 "$1/healthz")
+  case "$body" in *'"game"'*"casos-de-familia"*) return 0 ;; esac
+  return 1
+}
+
+# Provider 1: localhost.run (SSH). Foi o mais estável a partir desta máquina:
+# 12/12 requisições OK e WebSocket em ~390 ms.
+inicia_lhr() {
+  para_tudo
+  : > "$LOG"
+  nohup bash -c "sleep 100000 | ssh -tt -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -R 80:127.0.0.1:$PORT nokey@localhost.run" >> "$LOG" 2>&1 &
+  local U=""
+  for i in $(seq 1 20); do
+    sleep 3
+    # o subdomínio do túnel tem 16 hex; ignoramos links tipo https://admin.localhost.run
+    U=$(grep -aoE "https://[a-f0-9]{10,}\.lhr\.life|https://[a-z0-9-]{10,}\.localhost\.run" "$LOG" | head -1)
+    if [ -n "$U" ] && ok_url "$U"; then
+      publica "$U" "localhost.run" "Abre direto, sem tela de aviso, e com WebSocket (voz e chat instantaneos)."
+      echo "$(date -Is) OK    lhr    $U" >> "$HIST"
+      return 0
+    fi
+  done
+  echo "$(date -Is) FALHA lhr" >> "$HIST"
+  return 1
 }
 
 inicia_cf() {
@@ -94,6 +119,7 @@ inicia_serveo() {
 }
 
 vivo() {   # o processo do túnel está de pé?
+  pgrep -f "nokey@localhost" >/dev/null 2>&1 && return 0
   pgrep -f "cloudflared tunnel" >/dev/null 2>&1 && return 0
   pgrep -f "tmole $PORT" >/dev/null 2>&1 && return 0
   pgrep -f "ssh .*serveo" >/dev/null 2>&1 && return 0
@@ -118,7 +144,7 @@ while true; do
     MORTO=1; vivo && MORTO=0
     if [ "$MORTO" = "1" ] || [ "$FALHAS" -ge 6 ]; then
       echo "$(date -Is) reiniciando (falhas=$FALHAS processo_morto=$MORTO url=$U)" >> "$HIST"
-      inicia_cf || inicia_tmole || inicia_serveo
+      inicia_lhr || inicia_cf || inicia_tmole || inicia_serveo
       FALHAS=0
     fi
   fi
