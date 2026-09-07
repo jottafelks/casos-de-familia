@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+tests/shots
+preview
+.git
+.tun
+tunel.sh
+tunel-history.log
+TUNNEL-URL.txt
+ACESSO.md
+COMO-ACESSAR.md

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0c0e" />
+<meta name="description" content="Casos de Família — jogo de investigação criminal multiplayer com voz, até 6 jogadores no celular." />
+<title>CASOS DE FAMÍLIA — Investigação Criminal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230b0c0e'/><rect x='4' y='6' width='24' height='20' fill='%23e9e4d8'/><rect x='7' y='9' width='18' height='2' fill='%23b3202a'/><rect x='7' y='14' width='14' height='1.6' fill='%23555'/><rect x='7' y='18' width='12' height='1.6' fill='%23555'/></svg>" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<button id="btn-fullscreen-top" class="fs-top" title="Tela cheia" aria-label="Tela cheia">
+  <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"/></svg>
+</button>
+
+<div id="app">
+
+  <!-- ==================== HOME ==================== -->
+  <section id="screen-home" class="screen active">
+    <div class="grid-bg"></div>
+    <div class="home-inner">
+      <header class="brand">
+        <div class="brand-mark">CF</div>
+        <div class="brand-text">
+          <h1>CASOS DE FAMÍLIA</h1>
+          <p>INVESTIGAÇÃO CRIMINAL · MULTIPLAYER COM VOZ</p>
+        </div>
+      </header>
+
+      <div class="dossier">
+        <div class="dossier-stamp">CONFIDENCIAL</div>
+        <p class="dossier-line"><b>CASO:</b> <span id="case-title">A NOITE DE HELENA</span></p>
+        <p class="dossier-line"><b>LOCAL:</b> <span id="case-place">MANSÃO ALENCAR · VAZANTE — MG</span></p>
+        <p class="dossier-line"><b>VÍTIMA:</b> <span id="case-victim">Helena Alencar</span></p>
+        <p class="dossier-hook" id="case-hook">Seis pessoas estavam na casa. Todas mentem. Uma delas matou.</p>
+        <div class="case-picker" id="case-picker"></div>
+      </div>
+
+      <div class="home-form">
+        <label class="field">
+          <span>SEU NOME OU APELIDO</span>
+          <input id="input-name" maxlength="14" placeholder="Investigador(a)" autocomplete="off" />
+        </label>
+        <div class="field">
+          <span>SEU PERSONAGEM</span>
+          <div class="avatar-choice">
+            <button class="avatar-opt" data-avatar="m" id="av-m">
+              <svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              <b>MASCULINO</b>
+            </button>
+            <button class="avatar-opt" data-avatar="f" id="av-f">
+              <svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="7" r="4"/><path d="M5 21c0-4.2 3.4-7.5 7-7.5S19 16.8 19 21"/><path d="M8 6c1-3 7-3 8 0"/></svg>
+              <b>FEMININO</b>
+            </button>
+          </div>
+        </div>
+        <button id="btn-create" class="btn btn-red btn-big">CRIAR SALA</button>
+        <button id="btn-join" class="btn btn-big">ENTRAR EM SALA</button>
+        <button id="btn-solo" class="btn btn-ghost">JOGAR SOZINHO</button>
+        <button id="btn-return" class="btn btn-ghost hidden">VOLTAR PARA A SALA <b id="return-code">••••</b></button>
+        <p class="tiny">1 a 6 jogadores, cada um no próprio celular.<br />Um cria a sala e compartilha o código ou o link.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== LOBBY ==================== -->
+  <section id="screen-lobby" class="screen">
+    <div class="grid-bg"></div>
+    <div class="lobby-inner">
+      <header class="lobby-head">
+        <div>
+          <p class="eyebrow">SALA DE INVESTIGAÇÃO</p>
+          <div class="code" id="lobby-code">FAM-0000</div>
+        </div>
+        <div class="code-help">
+          <p>Jogadores: <b id="lobby-count">1</b>/6</p>
+          <p>Compartilhe o código ou o link:</p>
+          <div class="url" id="lobby-url">—</div>
+          <div class="row-btns">
+            <button class="btn btn-mini" id="btn-copy">COPIAR CÓDIGO</button>
+            <button class="btn btn-mini" id="btn-share">COMPARTILHAR</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="lobby-players" id="lobby-players"></div>
+
+      <div class="brief-box">
+        <p class="eyebrow">COMO SE JOGA</p>
+        <ul class="brief">
+          <li><b>Um de vocês é o assassino</b> — sorteado em segredo a cada partida.</li>
+          <li><b>Investigadores</b> exploram a cena, juntam pistas e comparam versões.</li>
+          <li><b>O assassino</b> mente, desvia e usa papos secretos para confundir.</li>
+          <li><b>Votem</b> quando tiverem certeza — o voto não pode ser trocado.</li>
+        </ul>
+      </div>
+
+      <footer class="lobby-foot">
+        <button class="btn btn-ghost" id="btn-leave">SAIR</button>
+        <button class="btn btn-ghost" id="btn-ready">ESTOU PRONTO</button>
+        <button class="btn btn-red btn-big" id="btn-start">INICIAR CASO</button>
+      </footer>
+      <p class="host-note" id="host-note">O anfitrião inicia o caso.</p>
+    </div>
+  </section>
+
+  <!-- ==================== BRIEFING ==================== -->
+  <section id="screen-briefing" class="screen">
+    <div class="grid-bg"></div>
+    <div class="briefing-inner">
+      <p class="eyebrow" id="brief-eyebrow">DOSSIÊ DO CASO</p>
+      <h2 id="brief-title">A NOITE DE HELENA</h2>
+      <div class="brief-sheet">
+        <p class="sheet-row"><b>LOCAL</b> <span id="brief-place">—</span></p>
+        <p class="sheet-row"><b>DATA</b> <span id="brief-date">—</span></p>
+        <p class="sheet-row"><b>VÍTIMA</b> <span id="brief-victim">—</span></p>
+      </div>
+      <p class="brief-text" id="brief-text">—</p>
+      <div class="brief-dots" id="brief-dots"></div>
+      <div class="brief-actions">
+        <button class="btn btn-ghost" id="btn-brief-back">VOLTAR</button>
+        <button class="btn btn-red btn-big" id="btn-brief-next">CONTINUAR <span id="brief-step">1/5</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PAPEL SECRETO ==================== -->
+  <section id="screen-role" class="screen">
+    <div class="grid-bg"></div>
+    <div class="role-inner" id="role-inner">
+      <p class="eyebrow" id="role-kicker">SUA IDENTIDADE SECRETA</p>
+      <h2 id="role-title">VOCÊ É INVESTIGADOR</h2>
+      <p id="role-sub" class="role-sub"></p>
+      <div class="role-card" id="role-card"></div>
+      <button class="btn btn-red btn-big" id="btn-role-ok">ENTENDER</button>
+      <p class="tiny" id="role-tip"></p>
+    </div>
+  </section>
+
+  <!-- ==================== JOGO ==================== -->
+  <section id="screen-game" class="screen">
+    <canvas id="scene-canvas"></canvas>
+
+    <div class="hud">
+      <div class="hud-top">
+        <div class="hud-timer" id="hud-timer">
+          <svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="13" r="8"/><path d="M12 8v5l3 2M9 2h6"/></svg>
+          <span id="timer-text">10:00</span>
+        </div>
+        <div class="hud-case" id="hud-case">HALL</div>
+        <div class="hud-right">
+          <button class="icon-btn" id="btn-mic" title="Microfone">
+            <svg viewBox="0 0 24 24" class="ico"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>
+          </button>
+          <button class="icon-btn" id="btn-config" title="Configurações">
+            <svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+          </button>
+          <button class="icon-btn" id="btn-fs-game" title="Tela cheia" aria-label="Tela cheia">
+            <svg viewBox="0 0 24 24" class="ico"><path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="players-strip" id="players-strip"></div>
+
+      <div class="voice-strip hidden" id="voice-strip">
+        <button class="pill pill-voice" id="btn-mute">
+          <span id="mute-ico">🎤</span> <span id="mute-label">MICROFONE LIGADO</span>
+        </button>
+        <button class="pill" id="btn-whisper-close" hidden>SAIR DO PAPO SECRETO</button>
+      </div>
+
+      <div class="hud-bottom">
+        <div class="loc-bar" id="loc-bar"></div>
+        <div class="hud-actions">
+          <button class="pill" id="btn-clues"><svg viewBox="0 0 24 24" class="ico"><path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h3"/></svg> EVIDÊNCIAS <b id="clue-count">0</b></button>
+          <button class="pill" id="btn-suspects"><svg viewBox="0 0 24 24" class="ico"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M17 13c2.5 0 4 2 4 4"/></svg> SUSPEITOS</button>
+          <button class="pill pill-vote" id="btn-vote"><svg viewBox="0 0 24 24" class="ico"><path d="M4 20h16M6 14l6-8 6 8"/></svg> VOTAR</button>
+          <button class="pill" id="btn-chat"><svg viewBox="0 0 24 24" class="ico"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg></button>
+        </div>
+      </div>
+
+      <div id="action-menu" class="action-menu hidden">
+        <div class="am-head"><span id="am-title">OBJETO</span><button id="am-close">✕</button></div>
+        <div id="am-body" class="am-body"></div>
+      </div>
+
+      <div id="cursor-label" class="cursor-label hidden"></div>
+      <div id="subtitle" class="subtitle hidden"></div>
+      <div id="toasts" class="toasts"></div>
+
+      <!-- painel inferior (evidências / suspeitos / chat / anotações) -->
+      <div id="panel" class="panel hidden">
+        <div class="panel-head">
+          <div class="panel-tabs">
+            <button class="ptab active" data-tab="evidencias">EVIDÊNCIAS</button>
+            <button class="ptab" data-tab="suspeitos">SUSPEITOS</button>
+            <button class="ptab" data-tab="chat">CHAT</button>
+            <button class="ptab" data-tab="notas">ANOTAÇÕES</button>
+          </div>
+          <button id="panel-close">✕</button>
+        </div>
+        <div class="panel-body" id="panel-body"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== VOTAÇÃO ==================== -->
+  <div id="vote-root" class="modal-root hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal">
+      <header class="modal-head"><h3 id="vote-title">🗳 VOTAR NO SUSPEITO</h3><button id="vote-close" class="modal-x">✕</button></header>
+      <div class="modal-body" id="vote-body"></div>
+      <footer class="modal-foot" id="vote-foot"></footer>
+    </div>
+  </div>
+
+  <!-- ==================== FIM ==================== -->
+  <section id="screen-end" class="screen">
+    <div class="grid-bg"></div>
+    <div class="end-inner">
+      <p class="eyebrow" id="end-kicker">FIM DA INVESTIGAÇÃO</p>
+      <h1 id="end-title">CASO ENCERRADO</h1>
+      <p class="epilogue" id="end-epilogue"></p>
+      <div class="end-stats" id="end-stats"></div>
+      <div class="end-buttons">
+        <button class="btn btn-red btn-big" id="btn-again">NOVO CASO</button>
+        <button class="btn btn-ghost" id="btn-home">INÍCIO</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== MODAL GENÉRICO ==================== -->
+  <div id="modal-root" class="modal-root hidden">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal" id="modal">
+      <header class="modal-head"><h3 id="modal-title">TÍTULO</h3><button id="modal-close" class="modal-x">✕</button></header>
+      <div class="modal-body" id="modal-body"></div>
+      <footer class="modal-foot" id="modal-foot"></footer>
+    </div>
+  </div>
+
+  <!-- config -->
+  <div id="config-root" class="modal-root hidden">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal small">
+      <header class="modal-head"><h3>CONFIGURAÇÕES</h3><button id="config-close" class="modal-x">✕</button></header>
+      <div class="modal-body">
+        <label class="row"><span>Música</span><input type="range" id="cfg-music" min="0" max="100" value="55" /></label>
+        <label class="row"><span>Efeitos</span><input type="range" id="cfg-sfx" min="0" max="100" value="80" /></label>
+        <label class="row"><span>Microfone</span><input type="checkbox" id="cfg-mic" /></label>
+        <label class="row"><span>Ouvir a equipe</span><input type="checkbox" id="cfg-listen" checked /></label>
+        <div class="row code-row"><span>Sala</span><b id="cfg-code">—</b></div>
+        <button class="btn btn-ghost wide" id="btn-fs">⛶ TELA CHEIA</button>
+        <button class="btn btn-ghost wide" id="cfg-quit">SAIR DA SALA</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading" class="loading hidden"><div class="spinner"></div><p id="loading-text">conectando…</p></div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

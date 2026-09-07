@@ -1,0 +1,26 @@
+{
+  "name": "casos-de-familia",
+  "version": "2.0.0",
+  "description": "CASOS DE FAMILIA — jogo de investigacao social multiplayer (1-6 jogadores) com chat de voz, salas por codigo e votacao irreversivel",
+  "type": "module",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js",
+    "test": "node tests/engine.test.mjs && node tests/http.mjs",
+    "test:e2e": "node tests/e2e.mjs",
+    "test:all": "npm test && npm run test:e2e && npm run test:stress",
+    "test:visual": "node tests/visual.mjs",
+    "test:stress": "node tests/stress.mjs"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

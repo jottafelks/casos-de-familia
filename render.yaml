@@ -1,0 +1,29 @@
+# =============================================================================
+#  CASOS DE FAMÍLIA — deploy permanente (Render.com)
+#  Uso: Render → New + → Blueprint → conecte este repositório → Apply
+#  Depois: copie a URL https://casos-de-familia.onrender.com
+# =============================================================================
+services:
+  - type: web
+    name: casos-de-familia
+    runtime: node
+    plan: free                 # grátis; dorme após ~15 min sem uso (acorda em ~30 s)
+    region: oregon             # escolha a região mais perto de você (ex.: ohio, frankfurt)
+    branch: main
+    numInstances: 1
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # --- Voz: STUN (Google) já vem embutido e resolve a maioria das redes.
+      # --- Preencha os três abaixo SOMENTE se algum jogador não conseguir
+      # --- conversar por voz em 4G/Wi-Fi restritivo (eles ficam no servidor,
+      # --- nunca no código do navegador).
+      - key: TURN_URL
+        sync: false            # ex.: turn:seu-servidor.com:3478
+      - key: TURN_USER
+        sync: false
+      - key: TURN_PASS
+        sync: false
