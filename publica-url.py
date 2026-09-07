@@ -38,7 +38,9 @@ CF-01 Mansao - CF-02 Fazenda - CF-03 Hotel - CF-04 O Ultimo Balanco (empresa)
 
 ## Se o link cair
 
-Abra este arquivo de novo - o watchdog recria o tunel sozinho e regrava a URL aqui em ~1 minuto.
+Se o link nao abrir: espere ~2 minutos e recarregue. O watchdog cuida do tunel sozinho e
+regrava o endereco novo aqui (e no QR) quando precisa trocar. Enquanto a maquina de
+desenvolvimento estiver ligada, o jogo volta no ar sem voce precisar fazer nada.
 
 Para nao depender de tunel: `RENDER-PASSO-A-PASSO.md` (URL fixa e gratuita) ou rode na sua
 maquina com `npm install && npm start`.

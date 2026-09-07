@@ -6,7 +6,7 @@ Abra esse endereco no celular. Abre direto, sem tela de aviso, e com WebSocket (
 
 QR code: abra `preview/QR-ACESSO.png` e aponte a camera do celular.
 
-Link ativo em: 07/09/2026 23:35:55 - via **Cloudflare**
+Link ativo em: 07/09/2026 23:41:43 - via **Cloudflare**
 
 ---
 
@@ -30,7 +30,9 @@ CF-01 Mansao - CF-02 Fazenda - CF-03 Hotel - CF-04 O Ultimo Balanco (empresa)
 
 ## Se o link cair
 
-Abra este arquivo de novo - o watchdog recria o tunel sozinho e regrava a URL aqui em ~1 minuto.
+Se o link nao abrir: espere ~2 minutos e recarregue. O watchdog cuida do tunel sozinho e
+regrava o endereco novo aqui (e no QR) quando precisa trocar. Enquanto a maquina de
+desenvolvimento estiver ligada, o jogo volta no ar sem voce precisar fazer nada.
 
 Para nao depender de tunel: `RENDER-PASSO-A-PASSO.md` (URL fixa e gratuita) ou rode na sua
 maquina com `npm install && npm start`.

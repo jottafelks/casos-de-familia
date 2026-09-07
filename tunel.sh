@@ -28,8 +28,12 @@ para_tudo() {
   sleep 2
 }
 
-ok_url() {   # $1 = url  -> 0 se /healthz responder 200
-  local c; c=$(curl -s -o /dev/null -m 15 -w "%{http_code}" "$1/healthz")
+ok_url() {   # $1 = url  -> 0 se /healthz responder 200 (2 tentativas, evita falso negativo)
+  local c
+  c=$(curl -s -o /dev/null -m 15 -w "%{http_code}" "$1/healthz")
+  [ "$c" = "200" ] && return 0
+  sleep 5
+  c=$(curl -s -o /dev/null -m 15 -w "%{http_code}" "$1/healthz")
   [ "$c" = "200" ]
 }
 
@@ -96,19 +100,24 @@ vivo() {   # o processo do túnel está de pé?
   return 1
 }
 
+# Regra de ouro: NUNCA matar um túnel que está vivo só porque uma requisição falhou.
+# O cloudflared se reconecta sozinho; se a gente o matar, o endereço muda à toa.
+#   - processo morto        -> recria na hora
+#   - processo vivo, sem 200 -> espera (6 checagens ~ 3 min) antes de recriar
 FALHAS=0
 while true; do
   OK=0
-  if [ -f "$URLFILE" ] && vivo; then
-    U=$(cat "$URLFILE")
+  U=$(cat "$URLFILE" 2>/dev/null)
+  if vivo && [ -n "$U" ]; then
     ok_url "$U" && OK=1
   fi
   if [ "$OK" = "1" ]; then
     FALHAS=0
   else
     FALHAS=$((FALHAS+1))
-    if [ "$FALHAS" -ge 2 ]; then
-      echo "$(date -Is) reiniciando (${FALHAS} falhas)" >> "$HIST"
+    MORTO=1; vivo && MORTO=0
+    if [ "$MORTO" = "1" ] || [ "$FALHAS" -ge 6 ]; then
+      echo "$(date -Is) reiniciando (falhas=$FALHAS processo_morto=$MORTO url=$U)" >> "$HIST"
       inicia_cf || inicia_tmole || inicia_serveo
       FALHAS=0
     fi
