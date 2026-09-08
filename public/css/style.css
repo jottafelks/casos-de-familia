@@ -563,3 +563,142 @@ button, input, select { font: inherit; color: inherit; }
 @media (hover: hover) and (pointer: fine) {
   .joystick { display: none !important; }
 }
+
+/* =============================================================================
+   MUNDO II — ações do mundo (denunciar / assassinar / reunião), fantasma
+   ========================================================================== */
+.world-actions {
+  position: absolute; right: 12px; bottom: calc(126px + var(--safe-b));
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-end; z-index: 22;
+}
+.wa-btn {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 48px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(20, 22, 26, .92);
+  color: var(--text); font: 700 13px/1 system-ui, sans-serif; letter-spacing: .06em;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .5); cursor: pointer;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+.wa-btn:active { transform: scale(.96); }
+.wa-ico { font-size: 17px; line-height: 1; }
+.wa-kill { border-color: rgba(224, 67, 79, .75); background: rgba(120, 20, 26, .95); }
+.wa-kill:disabled { opacity: .5; }
+.wa-report { border-color: rgba(224, 180, 100, .75); background: rgba(120, 84, 20, .95); }
+.wa-meet { border-color: var(--line); background: rgba(20, 22, 26, .92); }
+.wa-meet:disabled { opacity: .45; }
+@media (min-width: 900px) { .world-actions { bottom: 150px; right: 20px; } }
+
+.kill-cooldown {
+  position: absolute; right: 12px; bottom: calc(262px + var(--safe-b));
+  padding: 7px 12px; border-radius: 999px; z-index: 22;
+  background: rgba(11, 12, 14, .92); border: 1px solid var(--line);
+  color: var(--muted); font: 700 11px/1 system-ui, sans-serif; letter-spacing: .08em;
+  pointer-events: none;              /* é só um aviso: não pode cobrir os botões */
+}
+@media (min-width: 900px) { .kill-cooldown { bottom: 286px; right: 20px; } }
+
+.ghost-bar {
+  position: absolute; left: 10px; right: 10px; bottom: calc(232px + var(--safe-b));
+  z-index: 23; display: flex; gap: 10px; align-items: center;
+  padding: 10px 14px; border-radius: var(--r);
+  background: linear-gradient(180deg, rgba(60, 70, 90, .95), rgba(20, 24, 32, .95));
+  border: 1px solid rgba(150, 170, 200, .35);
+  color: #dfe6f2; font-size: 12.5px; line-height: 1.35;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .55);
+}
+.gb-ico { font-size: 20px; filter: drop-shadow(0 0 6px rgba(180, 210, 255, .5)); }
+.gb-txt b { color: #fff; letter-spacing: .04em; }
+@media (min-width: 900px) { .ghost-bar { bottom: 250px; max-width: 520px; } }
+
+/* =============================================================================
+   REUNIÃO — todos sentados à mesa, depoimentos e voto
+   ========================================================================== */
+.meeting-root {
+  position: absolute; inset: 0; z-index: 60;
+  display: flex; flex-direction: column;
+  background: radial-gradient(120% 90% at 50% 0%, #17191d 0%, #0b0c0e 60%, #050506 100%);
+  padding: calc(10px + var(--safe-t)) 12px calc(10px + var(--safe-b));
+  animation: mtIn .28s ease both;
+}
+@keyframes mtIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.mt-head { text-align: center; padding: 6px 0 10px; border-bottom: 1px solid var(--line); }
+.mt-title {
+  font: 800 clamp(15px, 4.4vw, 20px)/1.1 system-ui, sans-serif; letter-spacing: .14em;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.mt-sino { font-size: 1.15em; animation: sino 1.4s ease-in-out infinite; }
+@keyframes sino { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-12deg); } 86% { transform: rotate(12deg); } 94% { transform: rotate(-6deg); } }
+.mt-sub { margin-top: 6px; color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.mt-timer { margin-top: 4px; color: var(--warn); font: 700 12px/1 system-ui, sans-serif; letter-spacing: .1em; }
+
+.mt-body { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 10px 0; min-height: 0; }
+.mt-table-wrap { flex: 0 0 auto; display: flex; justify-content: center; }
+.mt-table {
+  position: relative; width: min(340px, 92%); height: 168px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 42%, #2a2f36 0%, #171a1f 62%, #101215 100%);
+  border: 1px solid #333a44; box-shadow: inset 0 0 40px rgba(0, 0, 0, .8), 0 10px 30px rgba(0, 0, 0, .55);
+}
+.mt-table::after {
+  content: ''; position: absolute; inset: 26%; border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, rgba(179, 32, 42, .22), transparent 70%);
+}
+.mt-seat {
+  position: absolute; width: 74px; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center;
+}
+.mt-avatar {
+  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  font: 800 15px/1 system-ui, sans-serif; color: #0b0c0e;
+  border: 2px solid rgba(255, 255, 255, .82); box-shadow: 0 4px 12px rgba(0, 0, 0, .6);
+}
+.mt-seat.dead .mt-avatar { filter: grayscale(1) brightness(.6); border-style: dashed; }
+.mt-seat.me .mt-avatar { border-color: var(--warn); box-shadow: 0 0 0 3px rgba(224, 180, 100, .28); }
+.mt-nome { font: 700 10.5px/1.15 system-ui, sans-serif; color: var(--text); max-width: 74px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-votou { font: 700 9.5px/1 system-ui, sans-serif; color: var(--muted); letter-spacing: .04em; }
+.mt-seat.dead .mt-votou { color: #7c828c; }
+
+.mt-side { flex: 1; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.mt-card { background: rgba(20, 22, 26, .8); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 10px; }
+.mt-card-tit { font: 800 10px/1 system-ui, sans-serif; letter-spacing: .16em; color: var(--muted); margin-bottom: 6px; }
+.mt-card-body { display: flex; flex-wrap: wrap; gap: 6px; }
+.mt-quem {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px;
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--line); font-size: 11.5px;
+}
+.mt-quem i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.mt-chat { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.mt-msgs { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; min-height: 70px; }
+.mt-msg { font-size: 12.5px; line-height: 1.35; background: rgba(255, 255, 255, .04); border-radius: 10px; padding: 6px 9px; }
+.mt-msg b { font-weight: 800; }
+.mt-msg.sys { background: none; color: var(--muted); font-style: italic; padding: 2px 0; }
+.mt-form { display: flex; gap: 6px; margin-top: 7px; }
+.mt-form input {
+  flex: 1; min-height: 40px; padding: 0 12px; border-radius: 10px;
+  background: #0e1013; border: 1px solid var(--line); color: var(--text); font-size: 13px;
+}
+.mt-send { min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: #1c1f24; color: var(--text); font: 700 11.5px/1 system-ui, sans-serif; letter-spacing: .08em; }
+.mt-send:disabled { opacity: .45; }
+
+.mt-foot { border-top: 1px solid var(--line); padding-top: 9px; }
+.mt-vote { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+.mt-sus {
+  min-height: 44px; padding: 0 13px; border-radius: 999px; cursor: pointer;
+  background: #16181c; border: 1px solid var(--line); color: var(--text);
+  font: 700 12px/1 system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px;
+}
+.mt-sus:disabled { opacity: .4; cursor: default; }
+.mt-sus.marcado { border-color: var(--red-2); background: rgba(179, 32, 42, .25); }
+.mt-sus.pular { border-color: #3a4048; }
+.mt-hint { margin-top: 7px; text-align: center; color: var(--muted); font-size: 11.5px; }
+
+@media (min-width: 900px) {
+  .mt-body { flex-direction: row; align-items: stretch; }
+  .mt-table-wrap { flex: 0 0 46%; align-items: center; }
+  .mt-table { width: min(520px, 100%); height: 300px; }
+  .mt-seat { width: 100px; }
+  .mt-avatar { width: 56px; height: 56px; font-size: 19px; }
+  .mt-nome { font-size: 12px; max-width: 100px; }
+  .mt-side { flex: 1; max-width: 46%; }
+}

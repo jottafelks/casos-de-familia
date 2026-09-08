@@ -9,6 +9,10 @@ import * as A from './audio.js';
 import { getLocation, getClue, getWitness, currentCase } from '../shared/engine.js';
 import { World } from './world.js';
 
+function stateName(state, pid) {
+  return (state?.players?.[pid]?.name) || 'alguém';
+}
+
 export class Game {
   constructor(canvas, net, hooks = {}) {
     this.c = canvas.getContext('2d');
@@ -71,6 +75,14 @@ export class Game {
       this.net?.on?.('pos', (ev) => {
         const m = ev?.detail || ev || {};
         this.world?.aplicarPos(m.id, m.x, m.y, m.room);
+      });
+      // corpo avistado: chega fora do estado (só para quem viu)
+      this.net?.on?.('corpse', (ev) => {
+        const m = ev?.detail || ev || {};
+        const c = m.corpse;
+        if (!c || !this.state) return;
+        if (!this.state.corpses) this.state.corpses = [];
+        if (!this.state.corpses.some(x => x.id === c.id)) this.state.corpses.push(c);
       });
     }
     if (!this.world.map) this.world.build(state, meId);
@@ -143,6 +155,14 @@ export class Game {
 
   update(dt) {
     if (this.usarMundo()) {
+      // durante a reunião ninguém anda: o mundo fica parado atrás da mesa
+      if (this.emReuniao) {
+        this.world.input.ax = 0; this.world.input.ay = 0; this.world.input.tap = null;
+        this.world.atualizarAcoes(dt);        // mantém botões e a barra de fantasma em dia
+        this.world.particles.update(dt);
+        this.world.render(dt);
+        return;
+      }
       // se alguém mudou de sala por fora (barra de locais, teste, reconexão),
       // o mundo leva o personagem até lá
       const cenaEngine = this.state?.players?.[this.meId]?.scene;
@@ -486,6 +506,43 @@ export class Game {
         case 'say': UI.say(ev.text, 5000); break;
         case 'sfx': A.playSfx(ev.id); break;
         case 'voted': UI.toast((ev.name || 'Alguém') + ' votou.', ''); break;
+
+        /* ---- assassinato ---- */
+        case 'kill': {
+          A.playSfx('kill');
+          const souVitima = ev.victim === this.meId;
+          const souTestemunha = (ev.witnesses || []).includes(this.meId);
+          const nomeVitima = ev.name || stateName(this.state, ev.victim);
+          if (souVitima) {
+            this.world?.fecharBalao();
+            this.world?.mostrarJoystick(false);
+            UI.toast('VOCÊ FOI MORTO', 'bad');
+            UI.say('Você não vai mais contar essa história. Mas ainda pode ver o resto…', 7000);
+          } else if (souTestemunha) {
+            const autor = stateName(this.state, ev.by);
+            UI.toast('VOCÊ VIU TUDO', 'bad');
+            UI.say(`Você viu ${autor} matar ${nomeVitima}.`, 8000);
+          } else if (this.state?.secret?.role === 'killer') {
+            UI.toast(nomeVitima + ' está fora da jogada.', 'good');
+          }
+          break;
+        }
+        case 'corpse': A.playSfx('body'); break;
+
+        /* ---- reunião ---- */
+        case 'meetingStart':
+          this.world?.fecharBalao();
+          this.world?.mostrarJoystick(false);
+          A.playSfx('meeting');
+          break;
+        case 'meetingVote':
+          break;
+        case 'meetingEnd':
+          if (ev.expelled) {
+            UI.toast((ev.name || 'Alguém') + ' foi retirado da equipe.', ev.wasKiller ? 'good' : 'bad');
+          }
+          if (!this.ended) this.world?.mostrarJoystick(true);
+          break;
         case 'whisperOpen': break;
         case 'end':
           this.ended = true;

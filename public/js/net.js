@@ -92,6 +92,8 @@ export class Network extends EventTarget {
       case 'signal': this.emit('signal', { from: m.from, data: m.data }); break;
       case 'error': this.emit('error', m); break;
       case 'kicked': this.emit('kicked', m); break;
+      /* mensagens novas (corpo avistado, etc.) viram evento com o mesmo nome */
+      default: if (m.type) this.emit(m.type, m); break;
     }
   }
 
@@ -206,6 +208,9 @@ export class Network extends EventTarget {
     this.emit('reconnect_failed', {});
     return false;
   }
+
+  /** atalho: o id deste jogador (usado pela interface do mundo e da reunião) */
+  get meId() { return this.playerId; }
 
   action(a) { if (!this.offline) this._send({ type: 'action', action: a }); else this._localAction(a); }
   chat(text) { if (!this.offline) this._send({ type: 'chat', text }); else this._localChat(text); }

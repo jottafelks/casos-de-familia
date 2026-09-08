@@ -232,7 +232,21 @@ const SFX = {
   blip:     t => { osc('sine', 1180, t, 0.07, 0.05); osc('sine', 1560, t + 0.05, 0.07, 0.035); },
   vote:     t => { osc('square', 520, t, 0.05, 0.05); osc('square', 700, t + 0.07, 0.09, 0.05);
                    noise(t, 0.06, 'bandpass', 1600, 0.10, 2); },
-  wind:     t => { const n = noise(t, 1.6, 'bandpass', 700, 0.10, 0.6); n.filter.frequency.linearRampToValueAtTime(300, t + 1.5); }
+  wind:     t => { const n = noise(t, 1.6, 'bandpass', 700, 0.10, 0.6); n.filter.frequency.linearRampToValueAtTime(300, t + 1.5); },
+
+  /* assassinato, corpos e reunião */
+  kill:     t => { osc('sawtooth', 220, t, 0.18, 0.10); osc('sawtooth', 90, t + 0.04, 0.42, 0.12);
+                   noise(t, 0.30, 'lowpass', 900, 0.24); osc('sine', 58, t + 0.16, 0.7, 0.10); },
+  body:     t => { osc('sine', 140, t, 0.30, 0.10); osc('sine', 96, t + 0.10, 0.5, 0.09);
+                   noise(t + 0.02, 0.22, 'lowpass', 420, 0.16); },
+  meeting:  t => { osc('square', 660, t, 0.10, 0.07); osc('square', 880, t + 0.13, 0.10, 0.07);
+                   osc('square', 660, t + 0.26, 0.16, 0.07); noise(t, 0.05, 'highpass', 2600, 0.05); },
+  gavel:    t => { noise(t, 0.07, 'lowpass', 900, 0.34); osc('sine', 150, t, 0.20, 0.16);
+                   osc('sine', 92, t + 0.03, 0.34, 0.10); noise(t + 0.09, 0.16, 'bandpass', 1800, 0.10, 2); },
+  ghost:    t => { osc('sine', 420, t, 0.9, 0.05); osc('sine', 630, t + 0.08, 0.8, 0.035);
+                   const n = noise(t, 1.0, 'bandpass', 900, 0.05, 0.5); n.filter.frequency.linearRampToValueAtTime(320, t + 0.9); },
+  panel:    t => { osc('square', 1200, t, 0.03, 0.05); osc('square', 700, t + 0.05, 0.05, 0.05);
+                   noise(t + 0.05, 0.10, 'highpass', 3000, 0.07); }
 };
 
 export function playSfx(id, vol = 1) {

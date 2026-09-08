@@ -18,6 +18,7 @@ import { currentCase, getClue } from '../shared/engine.js';
 const SPEED = 250;          // px/s do meu personagem
 const RAIO = 15;            // raio de colisão
 const ALCANCE = 165;        // distância para aparecer o botão INVESTIGAR
+const ALCANCE_MATA = 150;   // só mata quem está bem ao lado
 const PASSO_S = 0.40;       // intervalo do som de passos
 
 /* ------------------------------------------------------------------ atores */
@@ -229,6 +230,18 @@ export class World {
     host.appendChild(btn);
     this.btnInv = btn;
 
+    // botões do mundo: assassinar / denunciar / convocar reunião
+    const btnK = document.getElementById('btn-kill');
+    if (btnK) { btnK.onclick = (e) => { e.stopPropagation(); this.assassinar(); }; this.btnKill = btnK; }
+    const btnR = document.getElementById('btn-report');
+    if (btnR) { btnR.onclick = (e) => { e.stopPropagation(); this.denunciar(); }; this.btnReport = btnR; }
+    const btnM = document.getElementById('btn-emergency');
+    if (btnM) { btnM.onclick = (e) => { e.stopPropagation(); this.convocarReuniao(); }; this.btnMeet = btnM; }
+    this.cdBadge = document.getElementById('kill-cooldown');
+    this.cdTxt = document.getElementById('kill-cd-txt');
+    this.ghostBar = document.getElementById('ghost-bar');
+    this.ghostNote = document.getElementById('ghost-note');
+
     const bal = document.createElement('div');
     bal.id = 'inspect-balloon';
     bal.className = 'balloon hidden';
@@ -298,6 +311,8 @@ export class World {
     cv.addEventListener('pointerdown', (e) => {
       if (this.balaoAberto) { this.fecharBalao(); return; }
       const p = this.telaParaMundo(e.offsetX, e.offsetY);
+      if (this.clicouEmAlguem(p.x, p.y)) { this.input.tap = null; return; }
+      if (this.clicouEmCorpo(p.x, p.y)) { this.input.tap = null; return; }
       if (p) { this.input.tap = p; }
     });
     cv.addEventListener('pointerup', () => { /* mantém o destino até chegar */ });
@@ -467,6 +482,9 @@ export class World {
       if (this.ultimoObjeto) this.posicionarBalao(this.ultimoObjeto);
     }
 
+    /* ---- assassinar, denunciar e fantasma ---- */
+    this.atualizarAcoes(dt);
+
     /* ---- câmera ---- */
     const alvoX = this.me.x + (this.me.moving ? this.me.dir * 40 : 0);
     const alvoY = this.me.y + 30;
@@ -481,6 +499,149 @@ export class World {
 
     this.particles.update(dt);
     void moveu;
+  }
+
+
+  /* ------------------------------------------------- assassinato e corpos */
+  /** clique em outro jogador vivo: um toque escolhe, dois armam o ataque */
+  clicouEmAlguem(x, y) {
+    const st = this.g?.state;
+    if (!st || st.dead?.[this.g.meId]) return false;
+    for (const [id, o] of this.actors) {
+      if (id === this.g.meId) continue;
+      if (st.dead?.[id]) continue;
+      if (Math.hypot(o.x - x, o.y - y) < 46) {
+        const agora = performance.now();
+        const mesmo = this.alvo === id;
+        this.alvo = id; this.alvoT = agora;
+        if (mesmo && agora - (this.alvoTap || 0) < 900) this.armado = true;   // segundo toque: arma
+        this.alvoTap = agora;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  clicouEmCorpo(x, y) {
+    const c = this.corpoPerto(x, y, 130);
+    if (!c) return false;
+    this.denunciar(c);
+    return true;
+  }
+
+  corpoPerto(x, y, raio = 190) {
+    const st = this.g?.state;
+    if (!st) return null;
+    let melhor = null, md = raio;
+    for (const c of st.corpses || []) {
+      if (c.found) continue;
+      const d = Math.hypot(c.x - x, c.y - y);
+      if (d < md && c.room === this.me.room && this.verLinha(c.x, c.y)) { melhor = c; md = d; }
+    }
+    return melhor;
+  }
+
+  /** existe linha de visão entre mim e um ponto do mundo? */
+  verLinha(x, y) {
+    const d = Math.hypot(x - this.me.x, y - this.me.y);
+    const n = Math.max(1, Math.ceil(d / 16));
+    for (let i = 1; i <= n; i++) {
+      const t = i / n;
+      if (!walkable(this.map, this.me.x + (x - this.me.x) * t, this.me.y + (y - this.me.y) * t, 3)) return false;
+    }
+    return true;
+  }
+
+  alvoValido() {
+    const st = this.g?.state;
+    if (!st || !this.alvo) return null;
+    if (st.secret?.role !== 'killer') return null;
+    if (st.dead?.[this.g.meId] || st.dead?.[this.alvo]) return null;
+    const o = this.actors.get(this.alvo);
+    if (!o) return null;
+    if (Math.hypot(o.x - this.me.x, o.y - this.me.y) > ALCANCE_MATA) return null;
+    if (!this.verLinha(o.x, o.y)) return null;
+    return this.alvo;
+  }
+
+  assassinar() {
+    const st = this.g?.state;
+    const alvo = this.alvoValido();
+    if (!alvo || !st) { UI.toast('Chegue mais perto da sua vítima.', 'bad'); return; }
+    if (Date.now() < (st.killReadyAt || 0)) { UI.toast('Aguarde o intervalo entre ataques.', 'bad'); return; }
+    this.g.net.action({ type: 'kill', target: alvo });
+    this.armado = false; this.alvo = null;
+    if (this.btnKill) this.btnKill.classList.add('hidden');
+  }
+
+  denunciar(corpo) {
+    const st = this.g?.state;
+    const c = corpo || this.corpoPerto(this.me.x, this.me.y);
+    if (!c || !st) { UI.toast('Nenhum corpo por perto.', 'bad'); return; }
+    this.g.net.action({ type: 'report', corpseId: c.id });
+  }
+
+  convocarReuniao() {
+    const st = this.g?.state;
+    if (!st) return;
+    if (st.dead?.[this.g.meId]) { UI.toast('Quem já saiu não convoca reunião.', 'bad'); return; }
+    if (st.emergencyUsed?.[this.g.meId]) { UI.toast('Você já usou o botão de emergência.', 'bad'); return; }
+    this.g.net.action({ type: 'meeting' });
+  }
+
+  /** a cada quadro: botões, fantasma e intervalo em dia */
+  atualizarAcoes(dt) {
+    const st = this.g?.state;
+    if (!st) return;
+    const eu = this.g.meId;
+    const morto = !!st.dead?.[eu];
+
+    if (morto !== this._fantasma) {
+      this._fantasma = morto;
+      if (this.ghostBar) this.ghostBar.classList.toggle('hidden', !morto);
+      if (morto) {
+        const causa = st.deathCause?.[eu];
+        const nome = causa?.by ? st.players?.[causa.by]?.name : null;
+        if (this.ghostNote) {
+          const souAssassino = st.secret?.role === 'killer';
+          this.ghostNote.innerHTML = souAssassino
+            ? 'Sua identidade foi descoberta. Assista ao resto.'
+            : (nome ? `Você viu quem fez isso: <b>${nome}</b>. E não pode contar a ninguém.`
+                    : 'Pode observar, mas não fala, não vota e não denuncia.');
+        }
+      }
+    }
+
+    const corpo = morto ? null : this.corpoPerto(this.me.x, this.me.y);
+    if (this.btnReport) this.btnReport.classList.toggle('hidden', !corpo);
+
+    if (this.btnMeet) {
+      // sozinho não há reunião: esconde o botão
+      const muitaGente = Object.keys(st.players || {}).length > 1;
+      const pode = !morto && muitaGente && !st.emergencyUsed?.[eu] && st.phase === 'playing';
+      this.btnMeet.classList.toggle('hidden', !pode);
+    }
+
+    const souAssassino = st.secret?.role === 'killer';
+    const alvo = this.alvoValido();
+    if (!souAssassino || morto || !alvo || !this.armado || performance.now() - (this.alvoT || 0) > 5000) {
+      if (this.btnKill) this.btnKill.classList.add('hidden');
+    } else if (this.btnKill) {
+      this.btnKill.classList.remove('hidden');
+      const nome = st.players?.[alvo]?.name || 'alvo';
+      const txt = this.btnKill.querySelector('.wa-txt');
+      if (txt) txt.textContent = 'ASSASSINAR ' + nome.toUpperCase();
+    }
+
+    if (souAssassino && !morto && this.cdBadge) {
+      const falta = Math.max(0, (st.killReadyAt || 0) - Date.now());
+      if (falta > 300) {
+        this.cdBadge.classList.remove('hidden');
+        if (this.cdTxt) this.cdTxt.textContent = '🔪 AGUARDE ' + Math.ceil(falta / 1000) + 's';
+      } else this.cdBadge.classList.add('hidden');
+    } else if (this.cdBadge) this.cdBadge.classList.add('hidden');
+
+    void dt;
   }
 
   /* -------------------------------------------------------------- render */
@@ -519,6 +680,13 @@ export class World {
       this.desenharObjeto(c, o);
     }
     this.particles.draw(c, this.t);
+
+    // corpos (só para quem já os avistou)
+    const stR = this.g.state;
+    for (const corpo of stR?.corpses || []) {
+      if (corpo.room && !visivel({ x: corpo.x - 60, y: corpo.y - 60, w: 120, h: 120 })) continue;
+      this.desenharCorpo(c, corpo);
+    }
 
     // atores: ordem por y para dar profundidade
     const gente = [];
@@ -622,7 +790,42 @@ export class World {
     c.fillText(o.name || 'objeto', o.cx, o.y + o.h / 2);
   }
 
+  desenharCorpo(c, corpo) {
+    const x = corpo.x, y = corpo.y;
+    c.save();
+    // sombra no chão
+    c.fillStyle = 'rgba(0,0,0,.45)';
+    c.beginPath(); c.ellipse(x, y + 6, 30, 12, 0, 0, Math.PI * 2); c.fill();
+    // silhueta caída
+    c.translate(x, y);
+    c.rotate(-0.22);
+    c.fillStyle = 'rgba(18,18,20,.92)';
+    c.beginPath(); c.ellipse(0, 0, 34, 13, 0, 0, Math.PI * 2); c.fill();
+    // cabeça
+    c.beginPath(); c.arc(-26, -4, 10, 0, Math.PI * 2); c.fill();
+    // contorno do casaco (cor do jogador)
+    c.strokeStyle = corpo.color || '#b3202a';
+    c.lineWidth = 2.4; c.globalAlpha = 0.85;
+    c.beginPath(); c.ellipse(0, 0, 34, 13, 0, 0, Math.PI * 2); c.stroke();
+    c.globalAlpha = 1;
+    // mancha
+    c.fillStyle = 'rgba(120,16,22,.55)';
+    c.beginPath(); c.ellipse(14, 6, 22, 9, 0, 0, Math.PI * 2); c.fill();
+    c.restore();
+    // nome (quem ainda não denunciou vê de longe)
+    if (!corpo.found) {
+      c.save();
+      c.font = '700 11px system-ui, sans-serif';
+      c.textAlign = 'center';
+      c.fillStyle = 'rgba(255,255,255,.55)';
+      c.fillText((corpo.name || '?').toUpperCase(), x, y - 26);
+      c.restore();
+    }
+  }
+
   desenharEu(c) {
+    const morto = !!this.g?.state?.dead?.[this.g.meId];
+    if (morto) c.globalAlpha = 0.45;
     this._boneco(c, this.me.x, this.me.y, this.me.dir, this.me.anim, this.me.moving, '#c8b48a', '#2f3b46', true);
     // nome
     const p = this.g.state?.players?.[this.g.meId];
@@ -631,23 +834,38 @@ export class World {
       c.fillStyle = 'rgba(233,227,214,.85)';
       c.font = '700 15px ui-sans-serif, system-ui, sans-serif';
       c.textAlign = 'center';
-      c.fillText('você', this.me.x, this.me.y - 132);
+      c.fillText(morto ? 'você (fantasma)' : 'você', this.me.x, this.me.y - 132);
       c.restore();
     }
+    c.globalAlpha = 1;
   }
 
   desenharJogador(c, o, id) {
-    const p = this.g.state?.players?.[id];
+    const p = st?.players?.[id];
     const cor = p?.color || '#8fb8d8';
-    this._boneco(c, o.x, o.y, o.dir || 1, o.anim, true, cor, '#243040', false);
+    const alvo = this.alvo === id && !morto;
+
+    // anel no chão: marca quem está por perto / foi escolhido
+    c.save();
+    if (alvo) {
+      c.strokeStyle = this.armado ? '#e0434f' : 'rgba(224,180,100,.85)';
+      c.lineWidth = this.armado ? 3.5 : 2.5;
+      const pulso = 1 + Math.sin(this.t * 6) * 0.06;
+      c.beginPath(); c.ellipse(o.x, o.y, 26 * pulso, 11 * pulso, 0, 0, Math.PI * 2); c.stroke();
+    }
+    c.restore();
+
+    if (morto) c.globalAlpha = 0.4;
+    this._boneco(c, o.x, o.y, o.dir || 1, o.anim, true, cor, morto ? '#3a4149' : '#243040', false);
     if (p?.name) {
       c.save();
-      c.fillStyle = cor;
+      c.fillStyle = morto ? 'rgba(160,160,160,.7)' : cor;
       c.font = '700 15px ui-sans-serif, system-ui, sans-serif';
       c.textAlign = 'center';
-      c.fillText(p.name, o.x, o.y - 132);
+      c.fillText(morto ? p.name + ' †' : p.name, o.x, o.y - 132);
       c.restore();
     }
+    c.globalAlpha = 1;
   }
 
   /** Silhueta noir com caminhada — reaproveita o estilo do jogo. */

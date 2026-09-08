@@ -5,6 +5,7 @@ import { Network } from './net.js';
 import { Voice } from './voice.js';
 import { Game } from './game.js';
 import { UI } from './ui.js';
+import { Meeting } from './meeting.js';
 import * as A from './audio.js';
 import { CASES, getCase, currentCase, META } from '../shared/engine.js';
 
@@ -12,6 +13,7 @@ const $ = (s) => document.querySelector(s);
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 const net = new Network();
+let meeting = null;
 let game = null;
 let voice = null;
 let myAvatar = localStorage.getItem('cf_avatar') || 'm';
@@ -277,6 +279,11 @@ function enterGame() {
   UI.show('screen-game');
   if (!game) {
     game = new Game($('#scene-canvas'), net, { onEnd: () => showEnd() });
+    if (!meeting) {
+      meeting = new Meeting(net, {
+        onOpen: (aberto) => { if (game) game.emReuniao = aberto; }
+      });
+    }
   }
   game.attach(net.state, net.playerId);
   game.resize();
@@ -445,15 +452,29 @@ net.on('state', (ev) => {
     UI.renderLocBar(state, net.playerId, state.players[net.playerId]?.scene);
   }
 
+  if (game && phase === 'meeting') {
+    game.attach(state, net.playerId);       // mantém o mundo vivo atrás da mesa
+    game.onEvents(events);
+  }
+
   if (phase === 'lobby') { renderLobby(); UI.show('screen-lobby'); }
   else if (phase === 'briefing' && changed) { roleShownFor = null; startBriefing(); }
   else if (phase === 'playing' && changed) { afterBriefing(); }
   else if (phase === 'ended' && changed) { showEnd(); }
 
+  // reunião: abre, atualiza e fecha conforme o servidor mandar
+  if (meeting && game) {
+    meeting.atualizar(state);
+    if (state.phase !== 'meeting') game.emReuniao = false;
+  }
+
   for (const ev of events || []) {
     if (ev.type === 'clue' && phase === 'playing' && !game) UI.toast('Nova evidência', 'good');
     if (ev.type === 'whisper') A.playSfx('blip');
     if (ev.type === 'voted') A.playSfx('stamp');
+    if (ev.type === 'meetingStart') A.playSfx('meeting');
+    if (ev.type === 'meetingVote') A.playSfx('stamp');
+    if (ev.type === 'meetingEnd') A.playSfx('gavel');
   }
   if (voice) voice.syncPeers();
 });

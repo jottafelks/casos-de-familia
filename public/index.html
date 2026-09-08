@@ -187,11 +187,62 @@
         <div id="am-body" class="am-body"></div>
       </div>
 
+      <!-- ações do mundo: denunciar, assassinar, convocar reunião -->
+      <div id="world-actions" class="world-actions">
+        <button class="wa-btn wa-kill hidden" id="btn-kill"><span class="wa-ico">🔪</span><span class="wa-txt">ASSASSINAR</span></button>
+        <button class="wa-btn wa-report hidden" id="btn-report"><span class="wa-ico">🚨</span><span class="wa-txt">REPORTAR CORPO</span></button>
+        <button class="wa-btn wa-meet" id="btn-emergency"><span class="wa-ico">🔔</span><span class="wa-txt">CONVOCAR REUNIÃO</span></button>
+      </div>
+
+      <!-- assassino: intervalo entre ataques -->
+      <div id="kill-cooldown" class="kill-cooldown hidden"><span id="kill-cd-txt"></span></div>
+
+      <!-- quem morreu continua pela casa como fantasma -->
+      <div id="ghost-bar" class="ghost-bar hidden">
+        <span class="gb-ico">👻</span>
+        <span class="gb-txt"><b>VOCÊ ESTÁ FORA DA INVESTIGAÇÃO.</b> <span id="ghost-note">Pode observar, mas não fala, não vota e não denuncia.</span></span>
+      </div>
+
       <div id="cursor-label" class="cursor-label hidden"></div>
       <div id="subtitle" class="subtitle hidden"></div>
       <div id="toasts" class="toasts"></div>
 
       <!-- painel inferior (evidências / suspeitos / chat / anotações) -->
+
+      <!-- ==================== REUNIÃO ==================== -->
+      <div id="meeting-root" class="meeting-root hidden">
+        <div class="mt-head">
+          <div class="mt-title"><span class="mt-sino">🚨</span><span id="mt-title-txt">REUNIÃO DE EMERGÊNCIA</span></div>
+          <div class="mt-sub" id="mt-sub">Alguém convocou a equipe.</div>
+          <div class="mt-timer" id="mt-timer">2:30</div>
+        </div>
+
+        <div class="mt-body">
+          <div class="mt-table-wrap">
+            <div class="mt-table" id="mt-table"></div>
+          </div>
+          <div class="mt-side">
+            <div class="mt-card">
+              <div class="mt-card-tit">ESTAVAM NO LOCAL</div>
+              <div class="mt-card-body" id="mt-presentes"></div>
+            </div>
+            <div class="mt-card mt-chat">
+              <div class="mt-card-tit">DEPOIMENTOS</div>
+              <div class="mt-msgs" id="mt-msgs"></div>
+              <form class="mt-form" id="mt-form">
+                <input id="mt-input" maxlength="200" placeholder="Escreva seu depoimento…" autocomplete="off" />
+                <button type="submit" class="mt-send">FALAR</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-foot">
+          <div class="mt-vote" id="mt-vote"></div>
+          <div class="mt-hint" id="mt-hint">O voto é irreversível.</div>
+        </div>
+      </div>
+
       <div id="panel" class="panel hidden">
         <div class="panel-head">
           <div class="panel-tabs">
