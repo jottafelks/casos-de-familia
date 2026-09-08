@@ -535,6 +535,26 @@ $('#cfg-listen').onchange = (e) => {
 };
 $('#cfg-quit').onclick = () => { net.leave(); localStorage.removeItem('cf_code'); location.reload(); };
 $('#modal-close').onclick = () => UI.closeModal();
+
+/* --- janela de inspeção: X, ESC e clique fora sempre fecham (nunca travar) --- */
+function fecharInspecao() {
+  UI.hideActionMenu();
+  try { window.__c47.game?.clearSelection?.(); } catch {}
+}
+$('#am-close').onclick = (e) => { e.stopPropagation(); fecharInspecao(); };
+document.addEventListener('pointerdown', (e) => {
+  if (!UI.actionMenuOpen()) return;
+  if (e.target.closest && e.target.closest('#action-menu')) return;
+  fecharInspecao();
+}, true);
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (UI.actionMenuOpen()) { fecharInspecao(); return; }
+  if (UI.modalOpen()) { UI.closeModal(); return; }
+  const voto = document.querySelector('#vote-root');
+  if (voto && !voto.classList.contains('hidden')) { voto.classList.add('hidden'); return; }
+  if (UI.panelOpen()) { UI.closePanel(); }
+});
 document.querySelectorAll('#modal-root [data-close]').forEach(b => b.onclick = () => UI.closeModal());
 
 /* -------------------------------------------------- volta automática

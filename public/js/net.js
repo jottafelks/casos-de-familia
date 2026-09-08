@@ -83,6 +83,12 @@ export class Network extends EventTarget {
         this.serverOffset = m.t - Date.now();
         if (this.state) { this.state.__left = m.left; this.state.__phase = m.phase; }
         break;
+      case 'pos':   // leve: só a coordenada de quem se moveu
+        if (this.state?.players?.[m.id]) {
+          this.state.players[m.id].pos = { x: m.x, y: m.y, room: m.room };
+          this.emit('pos', m);
+        }
+        break;
       case 'signal': this.emit('signal', { from: m.from, data: m.data }); break;
       case 'error': this.emit('error', m); break;
       case 'kicked': this.emit('kicked', m); break;

@@ -76,6 +76,7 @@ export function addPlayer(state, id, name, avatar) {
     id, name: (name || ('Jogador ' + (idx + 1))).slice(0, 14),
     color: PLAYER_COLORS[idx % PLAYER_COLORS.length],
     scene: currentCase(state).locations[0].id,
+    pos: null,          // {x, y, room} — posição no mundo (quando o mapa está ativo)
     online: true, joinedAt: Date.now()
   };
   if (!state.order.includes(id)) state.order.push(id);
@@ -385,6 +386,13 @@ export function applyAction(state, action, ctx = {}) {
     const all = state.order.every(pid => state.ready[pid]);
     if (all && beginPlay(state)) out.push({ type: 'start' });
     return { ok: true, events: out };
+  }
+
+  /* ---- posição no mundo (leve: não gera evento nem estado completo) ----- */
+  if (action.type === 'pos') {
+    const p = state.players[ctx.playerId];
+    if (p) p.pos = { x: Number(action.x) || 0, y: Number(action.y) || 0, room: action.room || p.scene };
+    return { ok: true, events: [], pos: true };
   }
 
   if (!inPlay) return { ok: false, events: out, msg: 'A investigação não está em andamento.' };

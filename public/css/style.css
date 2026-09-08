@@ -470,3 +470,96 @@ button, input, select { font: inherit; color: inherit; }
   .brief-text { min-height: 110px; font-size: 15px; }
   .dossier { padding: 12px; }
 }
+
+/* ==========================================================================
+   MUNDO — joystick, botão de investigar e balão de inspeção
+   ========================================================================== */
+.joystick {
+  position: fixed; left: 18px; bottom: 22px; z-index: 40;
+  width: 132px; height: 132px; border-radius: 50%;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.joy-base {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, rgba(20,22,26,.62), rgba(8,9,11,.72));
+  border: 2px solid rgba(255,190,120,.30);
+  box-shadow: 0 10px 28px rgba(0,0,0,.5), inset 0 0 22px rgba(0,0,0,.5);
+  backdrop-filter: blur(2px);
+}
+.joy-knob {
+  position: absolute; left: 50%; top: 50%; width: 58px; height: 58px;
+  margin: -29px 0 0 -29px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #f2e8d4, #a08d6b);
+  border: 2px solid rgba(255,210,150,.55);
+  box-shadow: 0 6px 14px rgba(0,0,0,.55);
+  pointer-events: none;
+}
+
+.btn-investigar {
+  position: fixed; z-index: 41; transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 46px; padding: 0 16px; border-radius: 23px;
+  font: 700 13px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .08em;
+  color: #f4ecd8; cursor: pointer;
+  background: linear-gradient(180deg, rgba(58,44,30,.96), rgba(28,22,16,.96));
+  border: 1.5px solid rgba(255,190,120,.75);
+  box-shadow: 0 8px 20px rgba(0,0,0,.55), 0 0 0 4px rgba(255,190,120,.10);
+  animation: pulseInv 1.8s ease-in-out infinite;
+}
+.btn-investigar span { font-size: 16px; }
+@keyframes pulseInv {
+  0%, 100% { box-shadow: 0 8px 20px rgba(0,0,0,.55), 0 0 0 4px rgba(255,190,120,.10); }
+  50%      { box-shadow: 0 8px 20px rgba(0,0,0,.55), 0 0 0 9px rgba(255,190,120,.05); }
+}
+
+.balloon {
+  position: fixed; z-index: 42; max-width: 340px;
+  border-radius: 14px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(24,22,20,.98), rgba(14,13,12,.98));
+  border: 1.5px solid rgba(255,190,120,.55);
+  box-shadow: 0 18px 44px rgba(0,0,0,.7), 0 0 0 1px rgba(0,0,0,.6);
+  animation: balIn .14s ease-out;
+}
+@keyframes balIn { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+.bal-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; border-bottom: 1px solid rgba(255,190,120,.22);
+  background: linear-gradient(180deg, rgba(60,45,30,.5), transparent);
+  font: 700 13px/1.2 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .06em; color: #ffd9a0;
+}
+.bal-x {
+  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,190,120,.35);
+  color: #f0e2c6; font-size: 15px; line-height: 1;
+}
+.bal-body { padding: 12px; max-height: 42vh; overflow-y: auto; }
+.bal-desc { margin: 0 0 10px; font-size: 14.5px; line-height: 1.5; color: #ded3bd; }
+.bal-result {
+  margin: 10px 0 0; padding: 10px 12px; border-left: 3px solid #c9462c;
+  background: rgba(201,70,44,.10); border-radius: 0 8px 8px 0;
+  font-size: 14.5px; line-height: 1.55; color: #f0e6d2;
+}
+.bal-act {
+  display: block; width: 100%; min-height: 46px; margin: 0 0 8px;
+  padding: 0 12px; border-radius: 10px; cursor: pointer; text-align: left;
+  font: 600 14px/1.25 ui-sans-serif, system-ui, sans-serif; color: #f2e8d4;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,190,120,.30);
+}
+.bal-act:active { background: rgba(255,190,120,.18); }
+.bal-foot { padding: 0 12px 12px; display: flex; justify-content: flex-end; }
+.btn-mini {
+  min-height: 42px; padding: 0 18px; border-radius: 10px; cursor: pointer;
+  font: 700 12.5px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: .1em;
+  color: #f4ecd8; background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,190,120,.45);
+}
+.hidden { display: none !important; }
+
+@media (max-width: 480px) {
+  .joystick { left: 12px; bottom: 78px; width: 120px; height: 120px; }
+  .joy-knob { width: 52px; height: 52px; margin: -26px 0 0 -26px; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .joystick { display: none !important; }
+}

@@ -7,6 +7,7 @@ import { W, H, Props, Decor, Particles, drawRoomShell, drawLighting, drawFilmGra
 import { UI } from './ui.js';
 import * as A from './audio.js';
 import { getLocation, getClue, getWitness, currentCase } from '../shared/engine.js';
+import { World } from './world.js';
 
 export class Game {
   constructor(canvas, net, hooks = {}) {
@@ -64,6 +65,12 @@ export class Game {
     this.ended = false;
     const sc = state?.players?.[meId]?.scene || this.CASE().locations[0].id;
     if (sc !== this.scene) { this.scene = sc; this.particles.seed(sc, this.loc(sc).ambient); }
+    if (!this.world) {
+      this.world = new World(this);
+      this.net?.on?.('pos', (m) => this.world?.aplicarPos(m.id, m.x, m.y, m.room));
+    }
+    if (!this.world.map) this.world.build(state, meId);
+    this.world.mostrarJoystick(this.touch());
     this.syncHud();
   }
 
@@ -123,7 +130,33 @@ export class Game {
   }
 
   /* ------------------------------------------------------------ update */
+  /** Tem tela de toque? (define se mostramos o joystick) */
+  touch() {
+    return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  }
+
+  usarMundo() { return !!this.world?.map; }
+
   update(dt) {
+    if (this.usarMundo()) {
+      // se alguém mudou de sala por fora (barra de locais, teste, reconexão),
+      // o mundo leva o personagem até lá
+      const cenaEngine = this.state?.players?.[this.meId]?.scene;
+      if (cenaEngine && this.world.me.room !== cenaEngine) {
+        const sala = this.world.map.rooms.find(r => r.id === cenaEngine);
+        if (sala) {
+          this.world.me.x = sala.cx; this.world.me.y = sala.cy;
+          this.world.cam.x = sala.cx; this.world.cam.y = sala.cy;
+          this.world.me.room = cenaEngine;
+          this.world.input.tap = null;
+        }
+      }
+      this.world.update(dt);
+      const left = this.net.timeLeft();
+      UI.setTimer(left, this.net.fraction());
+      A.setTension(Math.pow(this.net.fraction(), 1.3));
+      return;
+    }
     const st = this.state;
     const me = st.players[this.meId];
     if (me && me.scene !== this.scene) {
@@ -193,6 +226,7 @@ export class Game {
 
   /* ------------------------------------------------------------ render */
   render(dt, frac) {
+    if (this.usarMundo()) { this.world.render(dt); return; }
     const c = this.c;
     const st = this.state;
     const L = this.loc();
@@ -436,6 +470,7 @@ export class Game {
       switch (ev.type) {
         case 'clue': {
           const cl = getClue(this.CASE(), ev.id);
+          this.world?.onClue(ev.id);
           UI.say((cl && cl.text) || 'Nova evidência encontrada.', 6500);
           UI.toast('NOVA EVIDÊNCIA · ' + (ev.by || 'equipe'), 'good');
           A.playSfx('chime');
@@ -448,7 +483,12 @@ export class Game {
         case 'sfx': A.playSfx(ev.id); break;
         case 'voted': UI.toast((ev.name || 'Alguém') + ' votou.', ''); break;
         case 'whisperOpen': break;
-        case 'end': this.ended = true; this.hooks.onEnd?.(ev.result); break;
+        case 'end':
+          this.ended = true;
+          this.world?.mostrarJoystick(false);
+          this.world?.fecharBalao();
+          this.hooks.onEnd?.(ev.result);
+          break;
       }
     }
     this.syncHud();
@@ -456,6 +496,13 @@ export class Game {
 
   /* -------- depuração / auto-teste (usado pelos testes e pelo preview) --- */
   clickObject(objId) {
+    if (this.usarMundo()) {
+      const o = this.world.map.objects.find(x => x.id === objId);
+      if (!o) return false;
+      this.world.me.x = o.cx; this.world.me.y = o.cy + 60;   // chega perto
+      this.world.abrirBalao(o);
+      return true;
+    }
     const o = (this.loc().objects || []).find(x => x.id === objId);
     if (!o) return false;
     const cx = o.x + o.w / 2, cy = o.y + o.h / 2;
@@ -465,6 +512,13 @@ export class Game {
     return true;
   }
   pickAction(i) {
+    if (this.usarMundo()) {
+      const obj = this.world.ultimoObjeto;
+      const a = obj && (obj.actions || [])[i];
+      if (!a) return false;
+      this.world.executarAcao(obj, a);
+      return true;
+    }
     const a = this._amActions && this._amActions[i];
     if (!a || a.disabled) return false;
     UI.hideActionMenu();
@@ -472,6 +526,16 @@ export class Game {
     return true;
   }
   travelTo(scene) { this.net.action({ type: 'travel', scene }); }
+
+  /** Chamado quando a janela de inspeção fecha: devolve a câmera ao normal e
+      garante que nada fique "selecionado" travando a interface. */
+  clearSelection() {
+    this.selected = null;
+    this._amActions = null;
+    this.focusZoom = false;
+    this.focusY = 0;
+    UI.hideActionMenu();
+  }
 }
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }

@@ -369,6 +369,18 @@ function handle(conn, msg) {
       pushState(room, [{ type: 'log', text: 'cronômetro encurtado (teste)' }]);
       return;
     }
+    /* Movimentação: atualiza e espalha só a coordenada (10 Hz por jogador).
+       Não passa pelo pushState para não retransmitir o estado inteiro. */
+    if (msg.action?.type === 'pos') {
+      const p = state.players[conn.playerId];
+      if (p && (state.phase === 'playing' || state.phase === 'voting')) {
+        p.pos = { x: Number(msg.action.x) || 0, y: Number(msg.action.y) || 0, room: msg.action.room || p.scene };
+        conn.lastSeen = Date.now();
+        broadcast(room, { type: 'pos', id: conn.playerId, x: p.pos.x, y: p.pos.y, room: p.pos.room }, conn.playerId);
+      }
+      return;
+    }
+
     const before = state.phase;
     const res = applyAction(state, msg.action, ctx);
     if (!res.ok && res.msg) deliver(conn, { type: 'error', msg: res.msg });
