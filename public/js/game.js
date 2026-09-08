@@ -67,7 +67,11 @@ export class Game {
     if (sc !== this.scene) { this.scene = sc; this.particles.seed(sc, this.loc(sc).ambient); }
     if (!this.world) {
       this.world = new World(this);
-      this.net?.on?.('pos', (m) => this.world?.aplicarPos(m.id, m.x, m.y, m.room));
+      // o net emite eventos DOM: o conteúdo vem em ev.detail
+      this.net?.on?.('pos', (ev) => {
+        const m = ev?.detail || ev || {};
+        this.world?.aplicarPos(m.id, m.x, m.y, m.room);
+      });
     }
     if (!this.world.map) this.world.build(state, meId);
     this.world.mostrarJoystick(this.touch());
