@@ -35,3 +35,19 @@
 2026-09-07T23:44:44+00:00 OK    lhr    https://admin.localhost.run
 2026-09-07T23:46:56+00:00 reiniciando (falhas=1 processo_morto=1 url=)
 2026-09-07T23:47:02+00:00 OK    lhr    https://be9827738a25eb.lhr.life
+2026-09-08T00:07:16+00:00 reiniciando (falhas=6 processo_morto=0 url=https://be9827738a25eb.lhr.life)
+2026-09-08T00:07:22+00:00 OK    lhr    https://6f16552f900a5b.lhr.life
+2026-09-08T00:16:19+00:00 reiniciando (falhas=6 processo_morto=0 url=https://6f16552f900a5b.lhr.life)
+2026-09-08T00:16:24+00:00 OK    lhr    https://39637825b84e8b.lhr.life
+2026-09-08T00:26:08+00:00 reiniciando (falhas=6 processo_morto=0 url=https://39637825b84e8b.lhr.life)
+2026-09-08T00:27:20+00:00 OK    lhr    https://992c131dc00e85.lhr.life
+2026-09-08T00:36:43+00:00 reiniciando (falhas=6 processo_morto=0 url=https://992c131dc00e85.lhr.life)
+2026-09-08T00:36:43+00:00 reiniciando (falhas=6 processo_morto=0 url=https://992c131dc00e85.lhr.life)
+2026-09-08T00:36:48+00:00 OK    lhr    https://e296c4f26063e7.lhr.life
+2026-09-08T00:36:48+00:00 OK    lhr    https://e296c4f26063e7.lhr.life
+2026-09-08T00:53:40+00:00 reiniciando (falhas=6 processo_morto=0 url=https://e296c4f26063e7.lhr.life)
+2026-09-08T00:53:40+00:00 reiniciando (falhas=6 processo_morto=0 url=https://e296c4f26063e7.lhr.life)
+2026-09-08T00:53:43+00:00 reiniciando (falhas=6 processo_morto=0 url=https://e296c4f26063e7.lhr.life)
+2026-09-08T00:53:46+00:00 OK    lhr    https://b74f41357b97c0.lhr.life
+2026-09-08T00:53:46+00:00 OK    lhr    https://b74f41357b97c0.lhr.life
+2026-09-08T00:53:49+00:00 OK    lhr    https://29da0af7d45601.lhr.life

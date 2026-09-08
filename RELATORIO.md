@@ -8,8 +8,9 @@ Data: 07/09/2026 · tudo abaixo foi testado de verdade neste workspace (não é 
 
 | | |
 |---|---|
-| **Link temporário (para testar hoje)** | https://be9827738a25eb.lhr.life |
-| **Link permanente** | ⚠️ **Pendente — depende da sua conta** (veja o item 4) |
+| **LINK FINAL DO JOGO** | **https://casos-de-familia.onrender.com** (verificado com partida de 3 jogadores)
+| **Link temporário (para testar hoje)** | https://casos-de-familia.onrender.com |
+| **Link permanente** | ✅ **Publicado** — `https://casos-de-familia.onrender.com` |
 | Servidor local | `npm start` → http://localhost:3000 |
 
 O endereço temporário funciona no celular agora mesmo (testei o `/healthz` e uma partida de

@@ -2,7 +2,7 @@
 
 ## Link para jogar agora (temporário)
 
-https://be9827738a25eb.lhr.life
+https://casos-de-familia.onrender.com
 
 > **Atenção:** este endereço é temporário — serve para você testar hoje no celular, mas
 > cai quando esta máquina desliga. O endereço definitivo sai do Render (plano grátis):

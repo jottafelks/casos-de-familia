@@ -1,38 +1,54 @@
-# CASOS DE FAMILIA - link para abrir no celular
+# 🎮 CASOS DE FAMÍLIA — link para abrir no celular
 
-## https://be9827738a25eb.lhr.life
+## 👉 https://casos-de-familia.onrender.com
 
-Abra esse endereco no celular. Abre direto, sem tela de aviso, e com WebSocket (voz e chat instantaneos).
+É só abrir esse endereço no celular. HTTPS, sem tela de aviso, funciona em Android e iPhone.
 
-QR code: abra `preview/QR-ACESSO.png` e aponte a camera do celular.
+📱 **QR code:** abra `preview/QR-ACESSO.png` e aponte a câmera do celular.
 
-Link ativo em: 07/09/2026 23:48:04 - via **localhost.run**
+Publicado em: 08/09/2026 · plataforma **Render** (plano gratuito) · repositório
+`github.com/jottafelks/casos-de-familia`
 
 ---
 
-## Jogar em grupo
+## Como jogar em grupo
 
-1. Um aparelho toca **CRIAR SALA** -> codigo `FAM-XXXX`
-2. Os outros tocam **ENTRAR EM SALA** -> digitam o codigo (ou abrem o link compartilhado)
+1. Um aparelho toca **CRIAR SALA** → aparece o código `FAM-XXXX`
+2. Os outros tocam **ENTRAR EM SALA** → digitam o código (ou abrem o link compartilhado)
 3. Todos marcam **PRONTO**; quem criou toca **INICIAR CASO**
-4. Cada um le o briefing no seu ritmo (**CONTINUAR**) e recebe o papel secreto
-5. Investiguem, conversem pelo microfone, usem **PAPO SECRETO** e votem antes de o tempo acabar
+4. Cada um lê o briefing no seu ritmo (**CONTINUAR**) e recebe o **papel secreto**
+5. Investiguem os objetos, troquem de local, conversem pelo 🎤, usem **PAPO SECRETO**
+   e votem antes de o cronômetro zerar
 
-Sozinho: **JOGAR SOZINHO**. Em 2: o sistema entra com suspeitos e a partida dura 5 min.
-
----
-
-## Casos
-
-CF-01 Mansao - CF-02 Fazenda - CF-03 Hotel - CF-04 O Ultimo Balanco (empresa)
+Sozinho: **JOGAR SOZINHO** (5 min). Em 2: o sistema entra com suspeitos (5 min).
+De 3 a 6: 10 minutos de investigação.
 
 ---
 
-## Se o link cair
+## Os 4 casos
 
-Se o link nao abrir: espere ~2 minutos e recarregue. O watchdog cuida do tunel sozinho e
-regrava o endereco novo aqui (e no QR) quando precisa trocar. Enquanto a maquina de
-desenvolvimento estiver ligada, o jogo volta no ar sem voce precisar fazer nada.
+| Código | Caso |
+|---|---|
+| CF-01 | A Noite de Helena (mansão) |
+| CF-02 | O Silêncio da Vargem Alta (fazenda) |
+| CF-03 | O Hóspede do 12 (hotel) |
+| CF-04 | O Último Balanço (empresa) |
 
-Para nao depender de tunel: `RENDER-PASSO-A-PASSO.md` (URL fixa e gratuita) ou rode na sua
-maquina com `npm install && npm start`.
+---
+
+## Uma coisa sobre o plano gratuito
+
+Depois de **~15 minutos sem ninguém jogar**, o servidor dorme. A primeira pessoa que abrir
+espera uns **30 a 60 segundos** para ele acordar; depois disso fica rápido de novo.
+
+Para não ter essa espera, a saída é um ping gratuito a cada 10 minutos em
+`https://casos-de-familia.onrender.com/healthz` — dá para criar em **cron-job.org** em 2
+minutos — ou subir para o plano pago do Render (~US$ 7/mês).
+
+---
+
+## Voz (microfone)
+
+Na primeira vez o navegador pergunta *"Permitir que CASOS DE FAMÍLIA use o microfone?"*.
+Pode negar: o jogo continua inteiro, só sem voz (chat, pistas, papo secreto e voto seguem
+funcionando). Para falar, toque em 🎤; para silenciar, em 🔇.
