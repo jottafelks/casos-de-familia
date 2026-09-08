@@ -702,3 +702,47 @@ button, input, select { font: inherit; color: inherit; }
   .mt-nome { font-size: 12px; max-width: 100px; }
   .mt-side { flex: 1; max-width: 46%; }
 }
+
+/* =============================================================================
+   ENERGIA: falta de luz, vela e quadro de energia
+   ========================================================================== */
+.wa-vela { border-color: rgba(255, 214, 150, .8); background: rgba(120, 84, 30, .95); }
+.wa-sabotagem { border-color: rgba(120, 170, 255, .7); background: rgba(24, 44, 82, .95); }
+.wa-sabotagem:disabled { opacity: .45; }
+
+.blackout-bar {
+  position: absolute; left: 10px; right: 10px; top: calc(64px + var(--safe-t));
+  z-index: 24; display: flex; gap: 10px; align-items: center;
+  padding: 9px 13px; border-radius: var(--r);
+  background: linear-gradient(180deg, rgba(90, 30, 12, .96), rgba(30, 12, 8, .96));
+  border: 1px solid rgba(224, 120, 60, .55);
+  color: #ffe6d5; font-size: 12.5px; line-height: 1.3;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .6);
+  animation: piscaAlerta 1.6s ease-in-out infinite;
+}
+@keyframes piscaAlerta { 0%, 100% { opacity: 1; } 50% { opacity: .78; } }
+.bo-ico { font-size: 19px; }
+.bo-txt b { letter-spacing: .06em; color: #fff; }
+@media (min-width: 900px) { .blackout-bar { left: 50%; transform: translateX(-50%); max-width: 560px; } }
+
+.painel-modal { max-width: 420px; }
+.painel-dica { margin: 0 0 12px; color: var(--muted); font-size: 13px; text-align: center; line-height: 1.4; }
+.painel-modelo, .painel-chaves { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; }
+.painel-lamp {
+  width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
+  font: 800 15px/1 system-ui, sans-serif;
+  border: 2px solid #3a4048; background: #16181c; color: #6b7280;
+}
+.painel-lamp.acesa { background: #ffd166; border-color: #ffe6a8; color: #3a2a06; box-shadow: 0 0 16px rgba(255, 209, 102, .55); }
+.painel-lamp.apagada { background: #22262c; color: #4b5563; }
+.painel-modelo.oculto .painel-lamp { background: #101216; color: #2a2e34; border-color: #2a2e34; box-shadow: none; }
+.painel-chave {
+  width: 58px; height: 62px; border-radius: 12px; cursor: pointer;
+  border: 2px solid #3a4048; background: linear-gradient(180deg, #22262c, #16181c);
+  color: var(--muted); font: 800 13px/1 system-ui, sans-serif;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+}
+.painel-chave i { width: 22px; height: 12px; border-radius: 3px; background: #3a4048; display: block; transition: transform .12s ease, background .12s ease; }
+.painel-chave.on { border-color: var(--warn); color: var(--warn); }
+.painel-chave.on i { background: #ffd166; transform: translateY(-4px); }
+.painel-erro { margin: 0; text-align: center; color: var(--red-2); font-size: 12.5px; }

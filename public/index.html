@@ -194,6 +194,15 @@
         <button class="wa-btn wa-meet" id="btn-emergency"><span class="wa-ico">🔔</span><span class="wa-txt">CONVOCAR REUNIÃO</span></button>
       </div>
 
+      <button class="wa-btn wa-sabotagem hidden" id="btn-sabotagem"><span class="wa-ico">⚡</span><span class="wa-txt">CORTAR ENERGIA</span></button>
+      <button class="wa-btn wa-vela hidden" id="btn-vela"><span class="wa-ico">🕯️</span><span class="wa-txt">ACENDER VELA</span></button>
+
+      <!-- energia cortada -->
+      <div id="blackout-bar" class="blackout-bar hidden">
+        <span class="bo-ico">⚠️</span>
+        <span class="bo-txt"><b>ENERGIA INTERROMPIDA.</b> <span id="blackout-note">Vá até o quadro de energia ou acenda uma vela.</span></span>
+      </div>
+
       <!-- assassino: intervalo entre ataques -->
       <div id="kill-cooldown" class="kill-cooldown hidden"><span id="kill-cd-txt"></span></div>
 
@@ -265,6 +274,24 @@
       <header class="modal-head"><h3 id="vote-title">🗳 VOTAR NO SUSPEITO</h3><button id="vote-close" class="modal-x">✕</button></header>
       <div class="modal-body" id="vote-body"></div>
       <footer class="modal-foot" id="vote-foot"></footer>
+    </div>
+  </div>
+
+  <!-- ============== QUADRO DE ENERGIA (minijogo) ============== -->
+  <div id="painel-root" class="modal-root hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal painel-modal">
+      <header class="modal-head"><h3>⚡ QUADRO DE ENERGIA</h3><button id="painel-close" class="modal-x">✕</button></header>
+      <div class="modal-body">
+        <p class="painel-dica" id="painel-dica">Memorize a sequência das chaves.</p>
+        <div class="painel-modelo" id="painel-modelo"></div>
+        <div class="painel-chaves" id="painel-chaves"></div>
+        <p class="painel-erro hidden" id="painel-erro"></p>
+      </div>
+      <footer class="modal-foot">
+        <button class="btn-ghost" id="painel-cancelar">SAIR</button>
+        <button class="btn-red" id="painel-religar" disabled>RELIGAR</button>
+      </footer>
     </div>
   </div>
 

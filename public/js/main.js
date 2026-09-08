@@ -6,6 +6,7 @@ import { Voice } from './voice.js';
 import { Game } from './game.js';
 import { UI } from './ui.js';
 import { Meeting } from './meeting.js';
+import { Luz } from './luz.js';
 import * as A from './audio.js';
 import { CASES, getCase, currentCase, META } from '../shared/engine.js';
 
@@ -14,6 +15,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 const net = new Network();
 let meeting = null;
+let luz = null;
 let game = null;
 let voice = null;
 let myAvatar = localStorage.getItem('cf_avatar') || 'm';
@@ -284,6 +286,8 @@ function enterGame() {
         onOpen: (aberto) => { if (game) game.emReuniao = aberto; }
       });
     }
+    if (!luz) luz = new Luz(net);
+    game.luz = luz;
   }
   game.attach(net.state, net.playerId);
   game.resize();
@@ -467,6 +471,7 @@ net.on('state', (ev) => {
     meeting.atualizar(state);
     if (state.phase !== 'meeting') game.emReuniao = false;
   }
+  if (luz) luz.sincronizar();
 
   for (const ev of events || []) {
     if (ev.type === 'clue' && phase === 'playing' && !game) UI.toast('Nova evidência', 'good');
@@ -475,6 +480,9 @@ net.on('state', (ev) => {
     if (ev.type === 'meetingStart') A.playSfx('meeting');
     if (ev.type === 'meetingVote') A.playSfx('stamp');
     if (ev.type === 'meetingEnd') A.playSfx('gavel');
+    if (ev.type === 'blackout') { UI.toast('⚠️ ENERGIA INTERROMPIDA', 'bad'); UI.say('Alguém cortou a energia da casa.', 5000); }
+    if (ev.type === 'lightsOn') { UI.toast('A energia voltou.', 'good'); UI.say((ev.name || 'Alguém') + ' religou a energia.', 5000); }
+    if (ev.type === 'vela') A.playSfx('ember');
   }
   if (voice) voice.syncPeers();
 });

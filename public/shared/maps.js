@@ -139,6 +139,45 @@ export function buildMap(caseData) {
     }
   }
 
+  /* Quadro de energia: todo caso tem um (a falta de luz é uma sabotagem).
+     Vai para o cômodo com menos objetos, encostado numa parede. */
+  /* o quadro de energia precisa ficar num cômodo sempre acessível
+     (nunca num local que só abre com uma pista) e com espaço livre */
+  const trancado = (id) => !!(caseData.locations || []).find(l => l.id === id)?.unlockBy;
+  const livres = rooms.filter(r => !trancado(r.id));
+  const candidatosSala = livres.length ? livres : rooms;
+  const painelRoom = [...candidatosSala].sort((a, b) =>
+    objects.filter(o => o.room === a.id).length - objects.filter(o => o.room === b.id).length)[0];
+  if (painelRoom && !objects.some(o => o.id === 'painel-energia')) {
+    /* encostado numa parede, no ponto mais livre possível:
+       assim o botão de investigar não pega outro objeto antes dele */
+    const W = 96, H = 118;
+    const candidatos = [
+      { x: painelRoom.x + 60, y: painelRoom.cy - H / 2 },                 // parede esquerda
+      { x: painelRoom.x + painelRoom.w - 60 - W, y: painelRoom.cy - H / 2 }, // direita
+      { x: painelRoom.cx - W / 2, y: painelRoom.y + 70 },                 // parede de cima
+      { x: painelRoom.cx - W / 2, y: painelRoom.y + painelRoom.h - 70 - H }, // baixo
+    ];
+    let melhor = candidatos[0], melhorD = -1;
+    for (const c of candidatos) {
+      const cx = c.x + W / 2, cy = c.y + H / 2;
+      let perto = Infinity;
+      for (const o of objects) {
+        if (o.room !== painelRoom.id) continue;
+        perto = Math.min(perto, Math.hypot(o.cx - cx, o.cy - cy));
+      }
+      if (perto > melhorD) { melhorD = perto; melhor = c; }
+    }
+    objects.push({
+      id: 'painel-energia', room: painelRoom.id,
+      name: 'Quadro de energia', prop: 'painel',
+      x: melhor.x, y: melhor.y, w: W, h: H,
+      cx: melhor.x + W / 2, cy: melhor.y + H / 2,
+      hint: 'Disjuntores antigos, etiquetas escritas à mão. A casa inteira passa por aqui.',
+      actions: [{ id: 'painel', label: 'Abrir o quadro de energia', effects: [] }],
+    });
+  }
+
   // pontos de entrada (spawn) e pontos de espera dos NPCs
   const spawns = rooms.map(R => ({
     room: R.id,
@@ -188,6 +227,11 @@ export function walkable(map, x, y, raio = 16) {
     if (x >= d.x - 26 && x <= d.x + d.w + 26 && y >= d.y - 26 && y <= d.y + d.h + 26) return true;
   }
   return false;
+}
+
+/** O quadro de energia do mapa (ou null se o caso não tiver). */
+export function painelDe(map) {
+  return map.objects.find(o => o.id === 'painel-energia') || null;
 }
 
 /** Objeto investigável mais próximo dentro do alcance. */

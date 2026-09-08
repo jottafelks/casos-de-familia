@@ -8,7 +8,7 @@
    ========================================================================== */
 
 import { CASES, getCase, getObject, getLocation, getClue, getWitness, DEFAULT_CASE_ID } from './cases.js';
-import { buildMap, walkable } from './maps.js';
+import { buildMap, walkable, painelDe } from './maps.js';
 
 export const META = {
   maxPlayers: 6,
@@ -27,7 +27,12 @@ export const META = {
   killDist: 150,                  // só mata quem está ao lado (px do mundo)
   witnessDist: 340,               // alcance para testemunhar um assassinato
   bodySight: 300,                 // distância para avistar um corpo
-  meetingTime: 150 * 1000         // duração máxima de uma reunião
+  meetingTime: 150 * 1000,        // duração máxima de uma reunião
+  sabotageCooldown: 45 * 1000,    // intervalo entre sabotagens do assassino
+  velaDuracao: 90 * 1000,         // quanto tempo uma vela fica acesa
+  velasPorJogador: 1,             // velas na mochila de cada um
+  velaRaio: 260,                  // alcance da luz de uma vela (px do mundo)
+  painelTrava: 5 * 1000           // punição por errar o painel
 };
 
 export const PLAYER_COLORS = ['#ff7a59', '#59d4ff', '#8ef58a', '#ffd166', '#c792ea', '#ff8fc7'];
@@ -80,6 +85,11 @@ export function createState(opts = {}) {
     emergencyUsed: {},              // pid -> true (o botão de emergência é único)
     frozenLeft: null,               // cronômetro congelado durante a reunião
     deathCause: {},                 // pid -> {by, t, room}
+    /* ---- luz, sabotagem e velas ---- */
+    luz: { apagada: false, desde: null, painel: null, travaAte: 0, consertou: null },
+    velas: {},                      // pid -> quantas ainda tem
+    velaAte: {},                    // pid -> até quando a vela está acesa
+    sabotagemAte: 0,                // intervalo do assassino
 
     flags: {}, opened: {}, taken: {}, firedEvents: {},
     chat: [], log: [],
@@ -209,6 +219,11 @@ export function startGame(state, opts = {}) {
   state.emergencyUsed = {};
   state.frozenLeft = null;
   state.deathCause = {};
+  state.luz = { apagada: false, desde: null, painel: null, travaAte: 0, consertou: null };
+  state.velas = {};
+  state.velaAte = {};
+  state.sabotagemAte = 0;
+  for (const pid of state.order) state.velas[pid] = META.velasPorJogador;
   for (const pid of state.order) { const p = state.players[pid]; if (p) p.pos = null; }
   if (opts.caseId) state.caseId = opts.caseId;
   assignRoles(state);
@@ -663,6 +678,70 @@ export function applyAction(state, action, ctx = {}) {
         finalizarPartida(state, 'killer', 'wiped');
         out.push({ type: 'end', result: state.result });
       }
+      return { ok: true, events: out };
+    }
+
+    /* ---- sabotagem: cortar a energia (só o assassino) -------------------- */
+    case 'sabotage': {
+      if (state.roles[ctx.playerId]?.role !== 'killer')
+        return { ok: false, events: out, msg: 'Só o assassino pode sabotar.' };
+      if (state.dead[ctx.playerId]) return { ok: false, events: out, msg: 'Você está fora da jogada.' };
+      if (state.luz?.apagada) return { ok: false, events: out, msg: 'A energia já está cortada.' };
+      const agora = Date.now();
+      if (agora < (state.sabotagemAte || 0))
+        return { ok: false, events: out, msg: `Aguarde ${Math.ceil((state.sabotagemAte - agora) / 1000)}s para sabotar de novo.` };
+      state.luz.apagada = true;
+      state.luz.desde = agora;
+      state.luz.consertou = null;
+      state.luz.painel = Array.from({ length: 5 }, () => (Math.random() < 0.5 ? 0 : 1));
+      state.sabotagemAte = agora + META.sabotageCooldown;
+      state.log.push({ t: agora, text: 'A energia foi cortada.', kind: 'sys' });
+      out.push({ type: 'blackout', by: ctx.playerId });
+      out.push({ type: 'sfx', id: 'blackout' });
+      return { ok: true, events: out };
+    }
+
+    /* ---- consertar o quadro de energia (minijogo validado no servidor) --- */
+    case 'painel': {
+      if (state.dead[ctx.playerId]) return { ok: false, events: out, msg: 'Quem já saiu não conserta nada.' };
+      if (!state.luz?.apagada) return { ok: false, events: out, msg: 'A energia está normal.' };
+      const agora = Date.now();
+      if (agora < (state.luz.travaAte || 0))
+        return { ok: false, events: out, msg: 'O quadro está travado. Aguarde alguns segundos.' };
+      const mapa = mapaDoCaso(state);
+      const painel = painelDe(mapa);
+      const p = state.players[ctx.playerId].pos;
+      if (painel && p) {
+        const d = Math.hypot(p.x - painel.cx, p.y - painel.cy);
+        if (p.room !== painel.room || d > 200)
+          return { ok: false, events: out, msg: 'Vá até o quadro de energia.' };
+      }
+      const alvo = state.luz.painel || [];
+      const seq = Array.isArray(action.seq) ? action.seq.map(n => (n ? 1 : 0)) : [];
+      if (seq.length !== alvo.length || seq.some((v, i) => v !== alvo[i])) {
+        state.luz.travaAte = agora + META.painelTrava;
+        state.luz.painel = Array.from({ length: 5 }, () => (Math.random() < 0.5 ? 0 : 1));
+        out.push({ type: 'sfx', id: 'error' });
+        return { ok: false, events: out, msg: 'Faísca e nada. A sequência estava errada.' };
+      }
+      state.luz.apagada = false;
+      state.luz.consertou = ctx.playerId;
+      state.luz.painel = null;
+      out.push({ type: 'lightsOn', by: ctx.playerId, name: cx.name });
+      out.push({ type: 'sfx', id: 'lights' });
+      return { ok: true, events: out };
+    }
+
+    /* ---- acender uma vela (luz pequena e limitada) ----------------------- */
+    case 'vela': {
+      if (state.dead[ctx.playerId]) return { ok: false, events: out, msg: 'Quem já saiu não precisa de luz.' };
+      if ((state.velas?.[ctx.playerId] || 0) <= 0) return { ok: false, events: out, msg: 'Você não tem mais velas.' };
+      const agora = Date.now();
+      if ((state.velaAte?.[ctx.playerId] || 0) > agora) return { ok: false, events: out, msg: 'Sua vela ainda está acesa.' };
+      state.velas[ctx.playerId] -= 1;
+      state.velaAte[ctx.playerId] = agora + META.velaDuracao;
+      out.push({ type: 'vela', player: ctx.playerId, name: cx.name, ate: state.velaAte[ctx.playerId] });
+      out.push({ type: 'sfx', id: 'ember' });
       return { ok: true, events: out };
     }
 

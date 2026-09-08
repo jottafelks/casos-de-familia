@@ -237,6 +237,8 @@ export class World {
     if (btnR) { btnR.onclick = (e) => { e.stopPropagation(); this.denunciar(); }; this.btnReport = btnR; }
     const btnM = document.getElementById('btn-emergency');
     if (btnM) { btnM.onclick = (e) => { e.stopPropagation(); this.convocarReuniao(); }; this.btnMeet = btnM; }
+    const btnS = document.getElementById('btn-sabotagem');
+    if (btnS) { btnS.onclick = (e) => { e.stopPropagation(); this.sabotar(); }; this.btnSabotagem = btnS; }
     this.cdBadge = document.getElementById('kill-cooldown');
     this.cdTxt = document.getElementById('kill-cd-txt');
     this.ghostBar = document.getElementById('ghost-bar');
@@ -355,6 +357,7 @@ export class World {
   }
 
   executarAcao(obj, a) {
+    if (a && a.id === 'painel') { this.fecharBalao(); this.g.luz?.abrir(); return; }
     this.g.net.action({ type: 'interact', scene: obj.room, objId: obj.id, actionId: a.id });
     A.playSfx('click');
     this.ultimoObjeto = obj;
@@ -439,6 +442,8 @@ export class World {
       UI.renderLocBar(st, this.g.meId, sala.id);
       A.playSfx('door');
       if (st?.players?.[this.g.meId]?.scene !== sala.id) {
+        this.cenaPendente = sala.id;          // evita o estado puxar o jogador de volta
+        this.cenaPendenteT = Date.now();
         this.g.net.action({ type: 'travel', scene: sala.id });
       }
       this.g.scene = sala.id;
@@ -581,6 +586,15 @@ export class World {
     this.g.net.action({ type: 'report', corpseId: c.id });
   }
 
+  sabotar() {
+    const st = this.g?.state;
+    if (!st) return;
+    if (st.secret?.role !== 'killer') return;
+    if (st.luz?.apagada) { UI.toast('A energia já está cortada.', ''); return; }
+    if (Date.now() < (st.sabotagemAte || 0)) { UI.toast('Aguarde para sabotar de novo.', 'bad'); return; }
+    this.g.net.action({ type: 'sabotage' });
+  }
+
   convocarReuniao() {
     const st = this.g?.state;
     if (!st) return;
@@ -703,15 +717,33 @@ export class World {
     c.restore();
 
     /* ---- luz (em coordenadas de tela) ---- */
+    const stL = this.g.state;
+    const apagada = !!stL?.luz?.apagada;
+    const agora = Date.now();
+    const minhaVela = (stL?.velaAte?.[this.g.meId] || 0) > agora;
     const luzes = [];
     const mp = this.mundoParaTela(this.me.x, this.me.y - 30);
-    luzes.push({ x: mp.x, y: mp.y, r: 300 * this.cam.zoom, a: 0.85, t: this.t, flicker: true });
-    for (const r of this.map.rooms) {
-      if (!visivel(r)) continue;
-      const p = this.mundoParaTela(r.cx, r.cy - 120);
-      luzes.push({ x: p.x, y: p.y, r: Math.max(r.w, r.h) * 0.72 * this.cam.zoom, a: 0.5, t: this.t });
+    if (apagada) {
+      // energia cortada: só o que a vela alcança
+      luzes.push({
+        x: mp.x, y: mp.y,
+        r: (minhaVela ? 215 : 100) * this.cam.zoom,
+        a: minhaVela ? 0.95 : 0.75, t: this.t, flicker: true,
+      });
+      for (const [id, o] of this.actors) {
+        if ((stL?.velaAte?.[id] || 0) <= agora) continue;      // vela dos outros também ilumina
+        const p = this.mundoParaTela(o.x, o.y - 30);
+        luzes.push({ x: p.x, y: p.y, r: 205 * this.cam.zoom, a: 0.9, t: this.t, flicker: true });
+      }
+    } else {
+      luzes.push({ x: mp.x, y: mp.y, r: 300 * this.cam.zoom, a: 0.85, t: this.t, flicker: true });
+      for (const r of this.map.rooms) {
+        if (!visivel(r)) continue;
+        const p = this.mundoParaTela(r.cx, r.cy - 120);
+        luzes.push({ x: p.x, y: p.y, r: Math.max(r.w, r.h) * 0.72 * this.cam.zoom, a: 0.5, t: this.t });
+      }
     }
-    drawLighting(c, g.lightCanvas, luzes, 0.62 + this.dark * 0.3);
+    drawLighting(c, g.lightCanvas, luzes, apagada ? 0.9 : 0.62 + this.dark * 0.3);
     drawFilmGrain(c, this.t, 0.035);
     void dt;
   }

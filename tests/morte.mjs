@@ -215,6 +215,69 @@ await t('o voto da reunião é irreversível e expulsa o mais votado', async () 
   console.log('      ' + (await nome(morto)) + ' foi retirado · era ' + (res.resultado.wasKiller ? 'O ASSASSINO' : 'inocente'));
 });
 
+await t('o assassino corta a energia e todos ficam no escuro', async () => {
+  const podeSabotar = await esperar(() => K.evaluate(() => {
+    const st = window.__c47.net.state;
+    return (st.sabotagemAte || 0) <= Date.now() && !st.dead?.[window.__c47.net.playerId];
+  }), 60000);
+  if (!podeSabotar) { console.log('      (assassino fora da jogada — pulando)'); return; }
+  await K.evaluate(() => window.__c47.net.action({ type: 'sabotage' }));
+  await sleep(1600);
+  for (const p of P) {
+    const d = await p.evaluate(() => ({
+      apagada: !!window.__c47.net.state.luz?.apagada,
+      barra: !document.querySelector('#blackout-bar').classList.contains('hidden'),
+    }));
+    assert(d.apagada, 'a luz não caiu para ' + await nome(p));
+    assert(d.barra, 'o aviso não apareceu para ' + await nome(p));
+  }
+});
+
+await t('acertar a sequência no quadro de energia religa a luz', async () => {
+  let vivo = null;
+  for (const p of P) if (await vivo === null && await p.evaluate(() => !window.__c47.net.state.dead[window.__c47.net.playerId])) { vivo = p; break; }
+  assert(vivo, 'ninguém vivo para consertar');
+  await vivo.evaluate(() => {
+    const w = window.__c47.game.world;
+    const p = w.map.objects.find(o => o.id === 'painel-energia');
+    if (p) { w.me.x = p.cx + 60; w.me.y = p.cy; }
+  });
+  const perto = await esperar(() => vivo.evaluate(() => !document.querySelector('#btn-investigar').classList.contains('hidden')), 6000);
+  assert(perto, 'não chegou no quadro de energia');
+  await vivo.click('#btn-investigar'); await sleep(700);
+  await vivo.evaluate(() => {
+    const b = [...document.querySelectorAll('.bal-act')].find(x => /quadro/i.test(x.textContent || ''));
+    if (b) b.click();
+  });
+  await sleep(800);
+  const abriu = await vivo.evaluate(() => !document.querySelector('#painel-root').classList.contains('hidden'));
+  assert(abriu, 'o minijogo do quadro não abriu');
+  await sleep(3200);                                  // espera o tempo de memorizar
+  await vivo.evaluate(() => {
+    const alvo = window.__c47.net.state.luz.painel.slice();
+    window.__c47.game.world.g.luz.seq = alvo;
+    window.__c47.game.world.g.luz.desenhar();
+  });
+  await sleep(300);
+  await vivo.evaluate(() => { window.__errosPainel = []; window.__c47.net.on('error', e => window.__errosPainel.push(e.detail?.msg)); });
+  await vivo.click('#painel-religar');
+  await sleep(1600);
+  const voltou = await vivo.evaluate(() => !window.__c47.net.state.luz?.apagada);
+  if (!voltou) {
+    const erros = await vivo.evaluate(() => window.__errosPainel || []);
+    const onde = await vivo.evaluate(() => {
+      const w = window.__c47.game.world; const p = w.map.objects.find(o => o.id === 'painel-energia');
+      return { sala: w.me.room, salaPainel: p.room, dist: Math.round(Math.hypot(w.me.x - p.cx, w.me.y - p.cy)) };
+    });
+    throw new Error('a luz não voltou · ' + JSON.stringify(erros) + ' · ' + JSON.stringify(onde));
+  }
+  for (const p of P) {
+    const ok = await p.evaluate(() => !window.__c47.net.state.luz?.apagada);
+    assert(ok, 'a luz não voltou para ' + await nome(p));
+  }
+  console.log('      ' + (await nome(vivo)) + ' religou a energia da casa');
+});
+
 await t('sem erros de JavaScript durante toda a sessão', async () => {
   assert(erros.length === 0, erros.slice(0, 2).join(' | '));
 });

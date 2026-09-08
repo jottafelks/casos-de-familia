@@ -166,7 +166,13 @@ export class Game {
       // se alguém mudou de sala por fora (barra de locais, teste, reconexão),
       // o mundo leva o personagem até lá
       const cenaEngine = this.state?.players?.[this.meId]?.scene;
-      if (cenaEngine && this.world.me.room !== cenaEngine) {
+      if (cenaEngine && cenaEngine === this.world.me.room) this.world.cenaPendente = null;
+      // se acabamos de avisar que mudamos de sala, espera o servidor confirmar
+      // (senão o estado velho puxa o jogador de volta e a casa inteira pisca)
+      let pend = this.world.cenaPendente;
+      if (pend && Date.now() - (this.world.cenaPendenteT || 0) > 3000) pend = null;
+      const mudouPorFora = cenaEngine && this.world.me.room !== cenaEngine && !pend;
+      if (mudouPorFora) {
         const sala = this.world.map.rooms.find(r => r.id === cenaEngine);
         if (sala) {
           this.world.me.x = sala.cx; this.world.me.y = sala.cy;
