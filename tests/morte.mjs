@@ -60,8 +60,11 @@ for (const p of outros.slice(1)) {
   await p.evaluate(s => { const w = window.__c47.game.world; w.me.x = s.cx; w.me.y = s.cy; }, salaLonge);
 }
 await sleep(1600);
-await K.evaluate(() => window.__c47.net.action({ type: '__test_ready' }));
-await sleep(600);
+await K.evaluate(() => window.__c47.net.action({ type: '__test_ready' }));   // só funciona com TEST_HOOKS
+// na versão publicada não há gancho de teste: espera a trégua real do assassino
+const liberado = await esperar(() => K.evaluate(() => (window.__c47.net.state.killReadyAt || 0) <= Date.now()), 40000);
+assert(liberado, 'o intervalo do assassino nunca liberou');
+await sleep(400);
 
 await t('o assassino vê os outros jogadores por perto', async () => {
   const atores = await K.evaluate(() => window.__c47.game.world.actors.size);
