@@ -8,6 +8,7 @@
    ========================================================================== */
 
 import { CASES, getCase, getObject, getLocation, getClue, getWitness, DEFAULT_CASE_ID } from './cases.js';
+import { buildMap, walkable } from './maps.js';
 
 export const META = {
   maxPlayers: 6,
@@ -20,7 +21,13 @@ export const META = {
     investigatorWrong: -50,
     killerCaught: -100,
     killerEscaped: 150
-  }
+  },
+  killCooldown: 40 * 1000,        // intervalo mínimo entre ataques
+  killGrace: 25 * 1000,           // trégua no início da partida
+  killDist: 150,                  // só mata quem está ao lado (px do mundo)
+  witnessDist: 340,               // alcance para testemunhar um assassinato
+  bodySight: 300,                 // distância para avistar um corpo
+  meetingTime: 150 * 1000         // duração máxima de uma reunião
 };
 
 export const PLAYER_COLORS = ['#ff7a59', '#59d4ff', '#8ef58a', '#ffd166', '#c792ea', '#ff8fc7'];
@@ -63,6 +70,16 @@ export function createState(opts = {}) {
     whispers: {},                   // 'a|b' -> [{from,text,t}]
     whisperLog: [],                 // [{a,b,t}]
     whisperPair: {},                // pid -> parceiro (papo secreto ativo)
+
+    /* ---- assassinatos, corpos e reuniões (investigação com assassino) ---- */
+    dead: {},                       // pid -> true (morto durante a partida)
+    corpses: [],                    // {id, victim, name, color, room, x, y, t, found, foundBy, seenBy}
+    meeting: null,
+    lastMeeting: null,
+    killReadyAt: 0,                 // quando o assassino pode agir de novo
+    emergencyUsed: {},              // pid -> true (o botão de emergência é único)
+    frozenLeft: null,               // cronômetro congelado durante a reunião
+    deathCause: {},                 // pid -> {by, t, room}
 
     flags: {}, opened: {}, taken: {}, firedEvents: {},
     chat: [], log: [],
@@ -183,17 +200,184 @@ export function startGame(state, opts = {}) {
   state.endReason = null;
   state.reveal = null;
   state.rounds = (state.rounds || 0) + 1;
+  /* nova partida: limpa mortes, corpos e reuniões da anterior */
+  state.dead = {};
+  state.corpses = [];
+  state.meeting = null;
+  state.lastMeeting = null;
+  state.killReadyAt = 0;
+  state.emergencyUsed = {};
+  state.frozenLeft = null;
+  state.deathCause = {};
+  for (const pid of state.order) { const p = state.players[pid]; if (p) p.pos = null; }
   if (opts.caseId) state.caseId = opts.caseId;
   assignRoles(state);
   return state;
 }
 
-/** Todos os jogadores já leram o briefing → começa a investigação. */
+/* ------------------------------------------- mundo: geometria e linha de visão */
+const _mapas = new Map();
+export function mapaDoCaso(state) {
+  const id = state.caseId || DEFAULT_CASE_ID;
+  if (!_mapas.has(id)) _mapas.set(id, buildMap(getCase(id) || currentCase(state)));
+  return _mapas.get(id);
+}
+/** true se não há parede entre os dois pontos */
+export function linhaDeVisao(map, ax, ay, bx, by, passo = 16) {
+  const d = Math.hypot(bx - ax, by - ay);
+  if (d < 2) return true;
+  const n = Math.max(1, Math.ceil(d / passo));
+  for (let i = 1; i < n; i++) {
+    const t = i / n;
+    if (!walkable(map, ax + (bx - ax) * t, ay + (by - ay) * t, 4)) return false;
+  }
+  return true;
+}
+/** jogadores vivos (que ainda podem agir) */
+export function vivos(state) { return state.order.filter(pid => !state.dead[pid]); }
+export function investigadoresVivos(state) {
+  return state.order.filter(pid => !state.dead[pid] && state.roles[pid]?.role !== 'killer').length;
+}
+/** quem assistiu ao assassinato: mesmo cômodo, perto e com linha de visão */
+export function testemunhasDe(state, killerId, victimId) {
+  const mapa = mapaDoCaso(state);
+  const v = state.players[victimId];
+  if (!v || !v.pos) return [];
+  const lista = [];
+  for (const pid of state.order) {
+    if (pid === killerId || pid === victimId) continue;
+    if (state.dead[pid]) continue;
+    const p = state.players[pid];
+    if (!p || !p.pos) continue;
+    if (p.pos.room !== v.pos.room) continue;
+    const d = Math.hypot(p.pos.x - v.pos.x, p.pos.y - v.pos.y);
+    if (d > META.witnessDist) continue;
+    if (!linhaDeVisao(mapa, p.pos.x, p.pos.y, v.pos.x, v.pos.y)) continue;
+    lista.push(pid);
+  }
+  return lista;
+}
+/** corpos que este jogador ainda não avistou mas deveria ver agora */
+export function corposAvistados(state, pid) {
+  const p = state.players[pid];
+  if (!p || !p.pos || state.dead[pid] === undefined && false) return [];
+  const mapa = mapaDoCaso(state);
+  const novos = [];
+  for (const c of state.corpses) {
+    if (c.seenBy?.[pid]) continue;
+    if (c.room !== p.pos.room) continue;
+    if (Math.hypot(p.pos.x - c.x, p.pos.y - c.y) > META.bodySight) continue;
+    if (!linhaDeVisao(mapa, p.pos.x, p.pos.y, c.x, c.y)) continue;
+    c.seenBy = c.seenBy || {}; c.seenBy[pid] = true;
+    novos.push(c);
+  }
+  return novos;
+}
+
+/* --------------------------------------------------- reuniões e eliminações */
+function congelarCronometro(state) {
+  if (state.frozenLeft == null) state.frozenLeft = timeLeft(state);
+}
+function descongelarCronometro(state) {
+  if (state.frozenLeft != null) {
+    state.endAt = Date.now() + state.frozenLeft + state.penaltyMs;
+    state.frozenLeft = null;
+  }
+}
+export function iniciarReuniao(state, info) {
+  congelarCronometro(state);
+  state.phase = 'meeting';
+  state.meeting = {
+    by: info.by, byName: state.players[info.by]?.name || 'Alguém',
+    reason: info.reason,                     // 'body' | 'button'
+    corpseId: info.corpseId || null,
+    room: info.room || null,
+    at: Date.now(), endsAt: Date.now() + META.meetingTime,
+    votes: {}, chat: [], result: null,
+    presentes: vivos(state).map(pid => ({
+      pid, name: state.players[pid]?.name || '?',
+      room: state.players[pid]?.pos?.room || state.players[pid]?.scene || '?',
+      color: state.players[pid]?.color || '#ccc', sou: false
+    }))
+  };
+  return state.meeting;
+}
+export function encerrarReuniao(state) {
+  if (!state.meeting) return null;
+  state.meeting.endedAt = Date.now();
+  descongelarCronometro(state);
+  state.lastMeeting = state.meeting;
+  state.meeting = null;
+  state.phase = 'playing';
+  state.killReadyAt = Math.max(state.killReadyAt || 0, Date.now() + 12000); // trégua ao voltar
+  return state.lastMeeting;
+}
+/** conta os votos da reunião, elimina (ou não) e encerra */
+export function resolverReuniao(state) {
+  const m = state.meeting;
+  if (!m) return [];
+  const out = [];
+  for (const pid of vivos(state)) if (m.votes[pid] === undefined) m.votes[pid] = null; // quem não votou, pulou
+  const count = {}; let skip = 0;
+  for (const v of Object.values(m.votes)) { if (v == null) skip++; else count[v] = (count[v] || 0) + 1; }
+  let expelled = null, maior = 0, empate = false;
+  for (const [pid, n] of Object.entries(count)) {
+    if (n > maior) { maior = n; expelled = pid; empate = false; }
+    else if (n === maior) empate = true;
+  }
+  if (empate || maior <= skip) expelled = null;
+  m.result = { expelled, votes: count, skip, wasKiller: false };
+  if (expelled) {
+    state.dead[expelled] = true;
+    m.result.wasKiller = state.roles[expelled]?.role === 'killer';
+    m.result.expelledName = state.players[expelled]?.name;
+    state.log.push({ t: Date.now(), text: `${m.result.expelledName} foi retirado da investigação.`, kind: 'sys' });
+  }
+  out.push({ type: 'meetingEnd', expelled, name: expelled ? state.players[expelled]?.name : null, wasKiller: m.result.wasKiller, votes: count, skip });
+  encerrarReuniao(state);
+  if (expelled && expelled === state.killerId) finalizarPartida(state, 'investigators', 'meeting');
+  else if (investigadoresVivos(state) === 0) finalizarPartida(state, 'killer', 'wiped');
+  if (state.phase === 'ended') out.push({ type: 'end', result: state.result });
+  return out;
+}
+/** encerra a partida fora da votação final (assassinato ou eliminação) */
+function finalizarPartida(state, result, reason) {
+  const CASE = currentCase(state);
+  const killer = state.killerId;
+  const deltas = {};
+  const bump = (pid, d) => { deltas[pid] = (deltas[pid] || 0) + d; state.scores[pid] = (state.scores[pid] || 0) + d; };
+  if (killer) {
+    for (const pid of state.order) {
+      if (pid === killer) continue;
+      bump(pid, result === 'investigators' ? META.score.investigatorRight : META.score.investigatorWrong);
+    }
+    bump(killer, result === 'investigators' ? META.score.killerCaught : META.score.killerEscaped);
+    const objetivos = evaluateObjectives(state, CASE);
+    if (result !== 'investigators') for (const o of objetivos) if (o.done) bump(killer, o.points);
+  } else if (state.order[0]) {
+    bump(state.order[0], result === 'investigators' ? META.score.investigatorRight : META.score.investigatorWrong);
+  }
+  state.phase = 'ended';
+  state.result = result;
+  state.endReason = reason;
+  state.reveal = {
+    killerId: killer,
+    killerName: killer ? state.players[killer]?.name : null,
+    killerLabel: killer ? state.roles[killer]?.label : null,
+    npcKiller: CASE.solution?.npcKiller,
+    revealText: killer ? CASE.solution?.reveal : CASE.solution?.npcReveal,
+    revealTraits: killer ? (state.roles[killer]?.traits || []).map(t => CASE.traits?.[t]).filter(Boolean) : [],
+    votes: {}, deltas, objectives: []
+  };
+  return state.reveal;
+}
+
 export function beginPlay(state) {
   if (state.phase !== 'briefing') return false;
   state.phase = 'playing';
   state.startedAt = Date.now();
   state.endAt = state.startedAt + state.duration;
+  state.killReadyAt = Date.now() + META.killGrace;
   state.log.push({ t: Date.now(), text: 'A investigação começou.', kind: 'sys' });
   return true;
 }
@@ -395,6 +579,35 @@ export function applyAction(state, action, ctx = {}) {
     return { ok: true, events: [], pos: true };
   }
 
+  /* ---- reunião em andamento ------------------------------------------- */
+  if (state.phase === 'meeting' && state.meeting) {
+    if (action.type === 'meetingChat') {
+      if (state.dead[ctx.playerId]) return { ok: false, events: out, msg: 'Quem já saiu não fala na reunião.' };
+      const txt = String(action.text || '').slice(0, 200);
+      if (txt) {
+        state.meeting.chat.push({ id: ctx.playerId, name: cx.name, color: player.color, text: txt, t: Date.now() });
+        if (state.meeting.chat.length > 60) state.meeting.chat.shift();
+      }
+      return { ok: true, events: out };
+    }
+    if (action.type === 'vote') {
+      const m = state.meeting;
+      if (state.dead[ctx.playerId]) return { ok: false, events: out, msg: 'Quem já saiu não vota.' };
+      if (m.votes[ctx.playerId] !== undefined) return { ok: false, events: out, msg: 'Seu voto já foi registrado e não pode ser alterado.' };
+      const alvo = action.target;
+      if (alvo != null) {
+        if (!state.players[alvo]) return { ok: false, events: out, msg: 'Suspeito inválido.' };
+        if (state.dead[alvo]) return { ok: false, events: out, msg: 'Não se vota em quem já saiu.' };
+      }
+      m.votes[ctx.playerId] = alvo || null;
+      out.push({ type: 'meetingVote', player: ctx.playerId, name: cx.name, target: alvo || null });
+      out.push({ type: 'sfx', id: 'stamp' });
+      if (vivos(state).every(pid => m.votes[pid] !== undefined)) out.push(...resolverReuniao(state));
+      return { ok: true, events: out };
+    }
+    return { ok: false, events: out, msg: 'A reunião está em andamento.' };
+  }
+
   if (!inPlay) return { ok: false, events: out, msg: 'A investigação não está em andamento.' };
 
   switch (action.type) {
@@ -406,6 +619,78 @@ export function applyAction(state, action, ctx = {}) {
       if (!act) return { ok: false, events: out, msg: 'Nada a ver aqui.' };
       applyEffects(state, act.effects, { ...cx, scene: action.scene, objId: action.objId }, out);
       if (!out.some(e => e.type === 'clue')) out.push({ type: 'sfx', id: 'paper' });
+      return { ok: true, events: out };
+    }
+
+    /* ---- assassinato (só o assassino, só perto, sem parede no meio) ------ */
+    case 'kill': {
+      if (state.roles[ctx.playerId]?.role !== 'killer')
+        return { ok: false, events: out, msg: 'Só o assassino pode atacar.' };
+      if (state.dead[ctx.playerId]) return { ok: false, events: out, msg: 'Você está fora da jogada.' };
+      const alvo = action.target;
+      const v = state.players[alvo];
+      if (!v || alvo === ctx.playerId) return { ok: false, events: out, msg: 'Alvo inválido.' };
+      if (state.dead[alvo]) return { ok: false, events: out, msg: 'Essa pessoa já está fora.' };
+      const agora = Date.now();
+      if (agora < (state.killReadyAt || 0))
+        return { ok: false, events: out, msg: `Aguarde ${Math.ceil((state.killReadyAt - agora) / 1000)}s para agir de novo.` };
+      const kp = state.players[ctx.playerId].pos, vp = v.pos;
+      if (!kp || !vp) return { ok: false, events: out, msg: 'Aproxime-se da vítima.' };
+      const mapa = mapaDoCaso(state);
+      const d = Math.hypot(kp.x - vp.x, kp.y - vp.y);
+      if (vp.room !== kp.room || d > META.killDist || !linhaDeVisao(mapa, kp.x, kp.y, vp.x, vp.y))
+        return { ok: false, events: out, msg: 'Você precisa estar ao lado da vítima, no mesmo cômodo.' };
+      state.dead[alvo] = true;
+      state.killReadyAt = agora + META.killCooldown;
+      state.deathCause[alvo] = { by: ctx.playerId, t: agora, room: vp.room };
+      const test = testemunhasDe(state, ctx.playerId, alvo);
+      const corpo = {
+        id: 'c' + (state.corpses.length + 1) + '-' + alvo.slice(-4), victim: alvo,
+        name: v.name, color: v.color, room: vp.room,
+        x: Math.round(vp.x), y: Math.round(vp.y), t: agora,
+        found: false, foundBy: null, seenBy: {}
+      };
+      corpo.seenBy[ctx.playerId] = true; corpo.seenBy[alvo] = true;
+      for (const w of test) corpo.seenBy[w] = true;
+      state.corpses.push(corpo);
+      out.push({
+        type: 'kill', victim: alvo, name: v.name, by: ctx.playerId,
+        room: vp.room, x: corpo.x, y: corpo.y, witnesses: test,
+        only: [alvo, ctx.playerId, ...test]          // só a vítima, o assassino e as testemunhas sabem
+      });
+      out.push({ type: 'sfx', id: 'kill', only: [alvo, ctx.playerId, ...test] });
+      if (investigadoresVivos(state) === 0) {
+        finalizarPartida(state, 'killer', 'wiped');
+        out.push({ type: 'end', result: state.result });
+      }
+      return { ok: true, events: out };
+    }
+
+    /* ---- denunciar um corpo --------------------------------------------- */
+    case 'report': {
+      if (state.dead[ctx.playerId]) return { ok: false, events: out, msg: 'Quem já saiu não pode denunciar.' };
+      if (state.phase !== 'playing') return { ok: false, events: out, msg: 'Agora não.' };
+      const corpo = state.corpses.find(c => c.id === action.corpseId && !c.found);
+      if (!corpo) return { ok: false, events: out, msg: 'Não há corpo a denunciar.' };
+      const p = state.players[ctx.playerId].pos;
+      const mapa = mapaDoCaso(state);
+      if (!p || p.room !== corpo.room || Math.hypot(p.x - corpo.x, p.y - corpo.y) > META.bodySight + 80)
+        return { ok: false, events: out, msg: 'Chegue perto do corpo para denunciar.' };
+      corpo.found = true; corpo.foundBy = ctx.playerId; corpo.foundAt = Date.now();
+      const m = iniciarReuniao(state, { by: ctx.playerId, reason: 'body', corpseId: corpo.id, room: corpo.room });
+      out.push({ type: 'meetingStart', meeting: m, by: m.byName, reason: 'body', room: corpo.room, victim: corpo.name });
+      return { ok: true, events: out };
+    }
+
+    /* ---- botão de emergência (uma vez por jogador) ----------------------- */
+    case 'meeting': {
+      if (state.dead[ctx.playerId]) return { ok: false, events: out, msg: 'Quem já saiu não convoca reunião.' };
+      if (state.phase !== 'playing') return { ok: false, events: out, msg: 'Agora não.' };
+      if (state.emergencyUsed[ctx.playerId]) return { ok: false, events: out, msg: 'Você já usou o botão de emergência.' };
+      state.emergencyUsed[ctx.playerId] = true;
+      const sala = state.players[ctx.playerId]?.pos?.room || state.players[ctx.playerId]?.scene || null;
+      const m = iniciarReuniao(state, { by: ctx.playerId, reason: 'button', room: sala });
+      out.push({ type: 'meetingStart', meeting: m, by: m.byName, reason: 'button', room: sala, victim: null });
       return { ok: true, events: out };
     }
 
@@ -510,6 +795,7 @@ export function applyAction(state, action, ctx = {}) {
 
     /* ---- chat da equipe -------------------------------------------------- */
     case 'chat': {
+      if (state.dead[ctx.playerId]) return { ok: false, events: out, msg: 'Quem já saiu perde a voz.' };
       const msg = String(action.text || '').slice(0, 160);
       if (msg) {
         state.chat.push({ id: ctx.playerId, name: cx.name, color: player.color, text: msg, t: Date.now() });

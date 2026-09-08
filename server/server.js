@@ -18,7 +18,8 @@ import { WebSocketServer } from 'ws';
 
 import {
   createState, addPlayer, removePlayer, startGame, applyAction,
-  checkTimedEvents, timeLeft, META, getCase, CASES
+  checkTimedEvents, timeLeft, META, getCase, CASES,
+  resolverReuniao, corposAvistados, vivos
 } from '../public/shared/engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -93,12 +94,18 @@ function deliver(conn, obj) {
   if (conn.outbox.length > 80) conn.outbox.shift();
   const w = conn.waiters.shift(); if (w) w();
 }
+/** Eventos com "only" são sigilosos: só chegam a quem está na lista. */
+function eventosPara(events, pid) {
+  if (!events || !events.length) return events || [];
+  return events.filter(e => !e.only || (Array.isArray(e.only) && e.only.includes(pid)));
+}
 function broadcast(room, obj, except) {
   for (const [pid, conn] of room.sockets) if (pid !== except) deliver(conn, obj);
 }
 function pushState(room, events = []) {
   for (const [pid, conn] of room.sockets) {
-    deliver(conn, { type: 'state', state: publicState(room.state, pid), events, t: Date.now() });
+    const ev = eventosPara(events, pid);
+    deliver(conn, { type: 'state', state: publicState(room.state, pid), events: ev, t: Date.now() });
   }
 }
 function playerLeft(room, pid, conn) {
@@ -238,6 +245,10 @@ function publicState(state, pid) {
   s.votes = v;
   s.voteCount = Object.keys(state.votes || {}).length;
 
+  // corpos: cada um só vê os que já avistou ou que foram denunciados
+  const corpos = (state.corpses || []).filter(c => c.found || c.seenBy?.[pid] || state.phase === 'ended');
+  s.corpses = corpos;
+
   // sussurros: só as conversas deste jogador (no fim, todos são revelados)
   const wh = {};
   for (const [key, arr] of Object.entries(state.whispers || {})) {
@@ -369,6 +380,14 @@ function handle(conn, msg) {
       pushState(room, [{ type: 'log', text: 'cronômetro encurtado (teste)' }]);
       return;
     }
+    /* Gancho de teste (TEST_HOOKS=1): libera o intervalo do assassino. */
+    if (msg.action?.type === '__test_ready') {
+      if (process.env.TEST_HOOKS !== '1') return;
+      state.killReadyAt = 0;
+      pushState(room, []);
+      return;
+    }
+
     /* Movimentação: atualiza e espalha só a coordenada (10 Hz por jogador).
        Não passa pelo pushState para não retransmitir o estado inteiro. */
     if (msg.action?.type === 'pos') {
@@ -376,7 +395,12 @@ function handle(conn, msg) {
       if (p && (state.phase === 'playing' || state.phase === 'voting')) {
         p.pos = { x: Number(msg.action.x) || 0, y: Number(msg.action.y) || 0, room: msg.action.room || p.scene };
         conn.lastSeen = Date.now();
-        broadcast(room, { type: 'pos', id: conn.playerId, x: p.pos.x, y: p.pos.y, room: p.pos.room }, conn.playerId);
+        if (state.phase === 'playing') {
+          broadcast(room, { type: 'pos', id: conn.playerId, x: p.pos.x, y: p.pos.y, room: p.pos.room }, conn.playerId);
+          // corpo que este jogador acabou de avistar (só ele recebe)
+          const novos = corposAvistados(state, conn.playerId) || [];
+          for (const c of novos) deliver(conn, { type: 'corpse', corpse: c });
+        }
       }
       return;
     }
@@ -389,6 +413,7 @@ function handle(conn, msg) {
   }
 
   if (msg.type === 'chat') {
+    if (state.dead?.[conn.playerId]) return;
     const p = state.players[conn.playerId];
     state.chat.push({
       id: conn.playerId, name: p?.name || '?', color: p?.color || '#fff',
@@ -403,6 +428,11 @@ function handle(conn, msg) {
 /* ----------------------------------------------------------------- tick */
 function tick(room) {
   const state = room.state;
+  if (state.phase === 'meeting' && state.meeting && Date.now() > state.meeting.endsAt) {
+    const ev = resolverReuniao(state);
+    pushState(room, ev);
+    return;
+  }
   if (state.phase !== 'playing') {
     broadcast(room, { type: 'tick', t: Date.now(), left: timeLeft(state), phase: state.phase });
     return;
